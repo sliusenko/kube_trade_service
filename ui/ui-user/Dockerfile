@@ -1,4 +1,4 @@
-// Dockerfile for admin-ui
+#// Dockerfile for ui-user
 FROM node:20 AS builder
 WORKDIR /app
 COPY . .
