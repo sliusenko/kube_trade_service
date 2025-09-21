@@ -8,9 +8,9 @@ const Page = ({ title, children }) => (
   </div>
 );
 
-const Overview = () => <Page title="Shell Overview">Огляд стратегії/бота.</Page>;
-const Logs = () => <Page title="Logs">Логи роботи Shell.</Page>;
-const Health = () => <Page title="Health">Моніторинг / життєздатність.</Page>;
+const Home = () => <Page title="Home">Мій акаунт / баланс.</Page>;
+const Strategies = () => <Page title="Strategies">Мої стратегії.</Page>;
+const Activity = () => <Page title="Activity">Історія угод / активність.</Page>;
 
 const navStyle = ({ isActive }) => ({
   padding: "10px 14px",
@@ -26,19 +26,19 @@ export default function App() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", minHeight: "100vh" }}>
       <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16 }}>
-        <div style={{ fontWeight: 800, marginBottom: 16 }}>Shell UI</div>
+        <div style={{ fontWeight: 800, marginBottom: 16 }}>User UI</div>
         <nav style={{ display: "grid", gap: 6 }}>
-          <NavLink to="/" style={navStyle} end>Overview</NavLink>
-          <NavLink to="/logs" style={navStyle}>Logs</NavLink>
-          <NavLink to="/health" style={navStyle}>Health</NavLink>
+          <NavLink to="/" style={navStyle} end>Home</NavLink>
+          <NavLink to="/strategies" style={navStyle}>Strategies</NavLink>
+          <NavLink to="/activity" style={navStyle}>Activity</NavLink>
         </nav>
       </aside>
 
       <main>
         <Routes>
-          <Route path="/" element={<Overview />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/health" element={<Health />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/strategies" element={<Strategies />} />
+          <Route path="/activity" element={<Activity />} />
           <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
         </Routes>
       </main>
