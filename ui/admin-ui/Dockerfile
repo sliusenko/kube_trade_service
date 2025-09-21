@@ -1,14 +1,10 @@
-ui-shell:
-  image:
-    repository: 760618/ui-shell
-    tag: "v1.0.0"
+// Dockerfile for admin-ui
+FROM node:20 AS builder
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
 
-  ingress:
-    enabled: true
-    className: nginx
-    hosts:
-      - host: shell.local
-        paths:
-          - path: /
-            pathType: Prefix
-
+FROM nginx:1.25
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
