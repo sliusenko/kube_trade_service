@@ -1,0 +1,15 @@
+# This template is processed at container start via envsubst.
+# The $PORT variable is injected by the Deployment/Helm.
+server {
+    listen ${PORT};
+    server_name _;
+
+    # Serve Vite build output
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Single Page App: fallback to index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

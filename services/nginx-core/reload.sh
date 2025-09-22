@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Приймемо список імен/доменів з ENV або дефолтів
 # Можеш передати сервісні DNS K8s: "admin-core config-svc"
-DOMAINS="${DOMAINS:admin-core config-svc}"
+DOMAINS="${DOMAINS:-"admin-core config-svc"}"
 INTERVAL_SEC="${INTERVAL_SEC:-5}"
 OUT_DIR="${OUT_DIR:-/tmp/nginx-dns}"
 LOG_PREFIX="[nginx-reloader]"
