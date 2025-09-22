@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y gettext-base && rm -rf /var/lib/apt/lis
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx template (uses $PORT)
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 # Default PORT (can be overridden by Deployment/Helm)
 ENV PORT=8080
