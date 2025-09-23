@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from app.deps.db import get_session
 from passlib.hash import bcrypt
 from typing import List
+from uuid import UUID
 import uuid
 
 from app.deps.db import get_session
@@ -37,7 +38,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_session))
     return new_user
 
 @router.put("/{user_id}", response_model=UserOut)
-async def update_user(user_id: int, data: UserUpdate, session: AsyncSession = Depends(get_session)):
+async def update_user(user_id: UUID, data: UserUpdate, session: AsyncSession = Depends(get_session)):
     obj = await session.get(User, user_id)
     if not obj:
         raise HTTPException(status_code=404, detail="User not found")
@@ -48,7 +49,7 @@ async def update_user(user_id: int, data: UserUpdate, session: AsyncSession = De
     return obj
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_user(user_id: UUID, session: AsyncSession = Depends(get_session)):
     obj = await session.get(User, user_id)
     if not obj:
         raise HTTPException(status_code=404, detail="User not found")
