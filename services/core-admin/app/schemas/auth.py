@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from uuid import UUID
 
 # Users
 # 🔹 Базове — спільні поля
@@ -16,13 +17,16 @@ class UserCreate(UserBase):
     role: str = "user"
 
 # 🔹 Для відповіді (читаємо з БД)
-class UserOut(UserBase):
-    user_id: int
+class UserOut(BaseModel):
+    user_id: UUID
+    username: str
+    email: EmailStr
     role: str
+    is_active: bool
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # у Pydantic v2
 
 # 🔹 Для оновлення
 class UserUpdate(BaseModel):
@@ -39,32 +43,35 @@ class RoleCreate(RoleBase): pass
 class RoleUpdate(RoleBase): pass
 
 class RoleOut(RoleBase):
-    id: int
+    name: str
+    description: Optional[str] = None
     class Config:
         from_attributes = True
 
 # Permissions
 class PermissionBase(BaseModel):
-    code: str
+    name: str
     description: Optional[str] = None
 
 class PermissionCreate(PermissionBase): pass
 class PermissionUpdate(PermissionBase): pass
 
 class PermissionOut(PermissionBase):
-    id: int
+    name: str
+    description: Optional[str] = None
     class Config:
         from_attributes = True
 
 # RolePermission (binding)
 class RolePermissionBase(BaseModel):
-    role_id: int
-    permission_id: int
+    role_name: int
+    permission_name: int
     user_id: Optional[int] = None
 
 class RolePermissionCreate(RolePermissionBase): pass
 
 class RolePermissionOut(RolePermissionBase):
-    id: int
+    role_name: int
+    permission_name: int
     class Config:
         from_attributes = True

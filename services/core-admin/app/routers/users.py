@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.deps.db import get_session
-from app.models.user import User
-from app.schemas.user import UserCreate, UserOut
 from passlib.hash import bcrypt
+from typing import List
+import uuid
 
 from app.deps.db import get_session
 from app.models.auth import User
@@ -23,6 +23,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_session))
     hashed_pw = bcrypt.hash(user.password)
 
     new_user = User(
+        user_id=str(uuid.uuid4()),
         username=user.username,
         email=user.email,
         role=user.role,

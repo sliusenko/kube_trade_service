@@ -2,6 +2,13 @@ fastapi
 uvicorn[standard]
 sqlalchemy[asyncio]
 asyncpg
-pydantic
 alembic
-email-validator
+
+python-jose[cryptography]   # JWT токени
+email-validator             # для EmailStr у Pydantic
+
+pydantic
+python-dotenv               # для .env конфігів
+
+bcrypt>=4.0.1
+passlib[bcrypt]
