@@ -62,7 +62,6 @@ class PermissionOut(PermissionBase):
 class RolePermissionBase(BaseModel):
     role_name: int
     permission_name: int
-    user_id: Optional[int] = None
 class RolePermissionCreate(RolePermissionBase): pass
 class RolePermissionOut(RolePermissionBase):
     role_name: int

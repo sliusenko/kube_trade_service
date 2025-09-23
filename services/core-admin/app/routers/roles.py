@@ -42,10 +42,14 @@ async def delete_role(role_name: str, session: AsyncSession = Depends(get_sessio
     await session.commit()
     return {"ok": True}
 
+# 1. Додавання пари Role - Permission
 # --- прив'язка пермішенів до ролі / користувача
 @router.post("/bind", response_model=RolePermissionOut, tags=["RolePermissions"])
-async def bind_permission(payload: RolePermissionCreate, session: AsyncSession = Depends(get_session)):
-    # перевірка наявності role/permission
+async def add_role_permission(
+    payload: RolePermissionCreate,
+    session: AsyncSession = Depends(get_session)
+):
+    # перевіряємо чи існують Role і Permission
     if not await session.get(Role, payload.role_name):
         raise HTTPException(status_code=404, detail="Role not found")
     if not await session.get(Permission, payload.permission_name):
@@ -56,11 +60,15 @@ async def bind_permission(payload: RolePermissionCreate, session: AsyncSession =
     await session.commit()
     return res.scalar_one()
 
+# 2. Видалення пари Role - Permission
 @router.delete("/bind", tags=["RolePermissions"])
-async def unbind_permission(payload: RolePermissionCreate, session: AsyncSession = Depends(get_session)):
+async def remove_role_permission(
+    payload: RolePermissionCreate,
+    session: AsyncSession = Depends(get_session)
+):
     stmt = delete(RolePermission).where(
         RolePermission.role_name == payload.role_name,
-        RolePermission.permission_name == payload.permission_name
+        RolePermission.permission_name == payload.permission_name,
     )
     res = await session.execute(stmt)
     await session.commit()
