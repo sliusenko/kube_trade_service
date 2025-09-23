@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import delete
-from .models import Permission
-from .schemas import PermissionCreate, PermissionUpdate, PermissionOut
-from .db import get_session
+from sqlalchemy import select
+from app.deps.db import get_session
+from app.models.auth import Permission
+from app.schemas.auth import PermissionCreate, PermissionUpdate, PermissionOut
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
