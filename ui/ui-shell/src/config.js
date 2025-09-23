@@ -5,7 +5,7 @@ export const CONFIG = {
   title: "dazhcore portal",
   keycloak: {
     url: (runtime.keycloak && runtime.keycloak.url) || "https://auth.dazhcore.com",
-    realm: (runtime.keycloak && runtime.keycloak.realm) || "kube-trade-bot",
+    realm: (runtime.keycloak && runtime.keycloak.realm) || "trade-realm",
     clientId: (runtime.keycloak && runtime.keycloak.clientId) || "admin-core",
   },
   routes: {
