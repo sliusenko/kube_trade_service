@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List
+from sqlalchemy.future import select
+from app.deps.db import get_session
+from app.models.user import User
+from app.schemas.user import UserCreate, UserOut
+from passlib.hash import bcrypt
 
 from app.deps.db import get_session
 from app.models.auth import User
@@ -14,13 +17,23 @@ async def list_users(limit: int = Query(200, le=1000), session: AsyncSession = D
     res = await session.execute(select(User).limit(limit))
     return res.scalars().all()
 
-@router.post("/", response_model=UserOut)
-async def create_user(data: UserCreate, session: AsyncSession = Depends(get_session)):
-    obj = User(**data.dict())
-    session.add(obj)
-    await session.commit()
-    await session.refresh(obj)
-    return obj
+@router.post("/users/", response_model=UserOut)
+async def create_user(user: UserCreate, db: AsyncSession = Depends(get_session)):
+    # хешуємо пароль
+    hashed_pw = bcrypt.hash(user.password)
+
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        password_hash=hashed_pw,
+        is_active=user.is_active
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return new_user
 
 @router.put("/{user_id}", response_model=UserOut)
 async def update_user(user_id: int, data: UserUpdate, session: AsyncSession = Depends(get_session)):
