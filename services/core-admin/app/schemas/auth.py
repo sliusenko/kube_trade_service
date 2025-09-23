@@ -38,10 +38,8 @@ class UserUpdate(BaseModel):
 class RoleBase(BaseModel):
     name: str
     description: Optional[str] = None
-
 class RoleCreate(RoleBase): pass
 class RoleUpdate(RoleBase): pass
-
 class RoleOut(RoleBase):
     name: str
     description: Optional[str] = None
@@ -52,10 +50,8 @@ class RoleOut(RoleBase):
 class PermissionBase(BaseModel):
     name: str
     description: Optional[str] = None
-
 class PermissionCreate(PermissionBase): pass
 class PermissionUpdate(PermissionBase): pass
-
 class PermissionOut(PermissionBase):
     name: str
     description: Optional[str] = None
@@ -67,9 +63,7 @@ class RolePermissionBase(BaseModel):
     role_name: int
     permission_name: int
     user_id: Optional[int] = None
-
 class RolePermissionCreate(RolePermissionBase): pass
-
 class RolePermissionOut(RolePermissionBase):
     role_name: int
     permission_name: int

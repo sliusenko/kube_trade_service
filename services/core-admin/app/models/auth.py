@@ -17,8 +17,6 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, server_default="true")
 
     role_obj = relationship("Role", back_populates="users")
-
-
 class Role(Base):
     __tablename__ = "roles"
 
@@ -27,8 +25,6 @@ class Role(Base):
 
     users = relationship("User", back_populates="role_obj", cascade="all, delete")
     permissions = relationship("RolePermission", back_populates="role")
-
-
 class RolePermission(Base):
     __tablename__ = "role_permissions"
 
@@ -37,8 +33,6 @@ class RolePermission(Base):
 
     role = relationship("Role", back_populates="permissions")
     permission = relationship("Permission", back_populates="roles")
-
-
 class Permission(Base):
     __tablename__ = "permissions"
 
