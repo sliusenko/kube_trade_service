@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
   getExchanges,
+  createExchange,
+  updateExchange,
+  deleteExchange,
   getExchangeSymbols,
   getExchangeLimits,
   getExchangeHistory,
 } from "../api/exchanges";
+import ExchangeForm from "./ExchangeForm"; // ✅ форма
 
 const TabButton = ({ label, active, onClick }) => (
   <button
@@ -30,9 +34,21 @@ export default function ExchangesPage() {
   const [limits, setLimits] = useState([]);
   const [history, setHistory] = useState([]);
 
+  // для модального вікна
+  const [openForm, setOpenForm] = useState(false);
+  const [editExchange, setEditExchange] = useState(null);
+
   // завантаження всіх бірж
+  const fetchExchanges = async () => {
+    try {
+      setExchanges(await getExchanges());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    getExchanges().then(setExchanges).catch(console.error);
+    fetchExchanges();
   }, []);
 
   // завантаження даних по вибраній біржі
@@ -47,6 +63,23 @@ export default function ExchangesPage() {
       getExchangeHistory(selectedExchange).then(setHistory).catch(console.error);
     }
   }, [activeTab, selectedExchange]);
+
+  // CRUD handlers
+  const handleSave = async (data) => {
+    if (editExchange) {
+      await updateExchange(editExchange.id, data);
+    } else {
+      await createExchange(data);
+    }
+    setOpenForm(false);
+    setEditExchange(null);
+    fetchExchanges();
+  };
+
+  const handleDelete = async (id) => {
+    await deleteExchange(id);
+    fetchExchanges();
+  };
 
   return (
     <div className="p-6">
@@ -80,24 +113,71 @@ export default function ExchangesPage() {
 
       {/* EXCHANGES */}
       {activeTab === "EXCHANGES" && (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Name</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            {exchanges.map((ex) => (
-              <tr key={ex.id}>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.id}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.name}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.type}</td>
+        <>
+          {/* кнопка додавання */}
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => {
+                setEditExchange(null);
+                setOpenForm(true);
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                background: "#1e40af",
+                color: "white",
+                fontWeight: 600,
+              }}
+            >
+              + Add Exchange
+            </button>
+          </div>
+
+          {/* таблиця */}
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
+                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Name</th>
+                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Type</th>
+                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Active</th>
+                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {exchanges.map((ex) => (
+                <tr key={ex.id}>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.id}</td>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.name}</td>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.type}</td>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
+                    {ex.is_active ? "Yes" : "No"}
+                  </td>
+                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
+                    <button
+                      onClick={() => {
+                        setEditExchange(ex);
+                        setOpenForm(true);
+                      }}
+                      style={{ marginRight: 8 }}
+                    >
+                      Edit
+                    </button>
+                    <button onClick={() => handleDelete(ex.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* модальне вікно */}
+          <ExchangeForm
+            open={openForm}
+            onClose={() => setOpenForm(false)}
+            onSave={handleSave}
+            initialData={editExchange}
+          />
+        </>
       )}
 
       {/* SYMBOLS */}
