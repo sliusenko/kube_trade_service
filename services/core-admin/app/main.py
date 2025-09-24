@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.models import Base
 from app.deps.db import engine
-from app.routers import users, roles, permissions, scheduler
+from app.routers import users, roles, permissions, role_permissions, scheduler
 
 app = FastAPI(title="Admin-core API")
 
@@ -14,6 +14,7 @@ async def startup_event():
 app.include_router(users.router)
 app.include_router(roles.router)
 app.include_router(permissions.router)
+app.include_router(role_permissions.router)
 app.include_router(scheduler.router)
 
 @app.get("/")

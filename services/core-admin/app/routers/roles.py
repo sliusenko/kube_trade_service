@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert, delete
 from typing import List
@@ -40,39 +41,4 @@ async def delete_role(role_name: str, session: AsyncSession = Depends(get_sessio
         raise HTTPException(status_code=404, detail="Role not found")
     await session.delete(obj)
     await session.commit()
-    return {"ok": True}
-
-# 1. Додавання пари Role - Permission
-# --- прив'язка пермішенів до ролі / користувача
-@router.post("/bind", response_model=RolePermissionOut, tags=["RolePermissions"])
-async def add_role_permission(
-    payload: RolePermissionCreate,
-    session: AsyncSession = Depends(get_session)
-):
-    # перевіряємо чи існують Role і Permission
-    if not await session.get(Role, payload.role_name):
-        raise HTTPException(status_code=404, detail="Role not found")
-    if not await session.get(Permission, payload.permission_name):
-        raise HTTPException(status_code=404, detail="Permission not found")
-
-    stmt = insert(RolePermission).values(**payload.dict()).returning(RolePermission)
-    res = await session.execute(stmt)
-    await session.commit()
-    return res.scalar_one()
-
-# 2. Видалення пари Role - Permission
-@router.delete("/bind", tags=["RolePermissions"])
-async def remove_role_permission(
-    role_name: str,
-    permission_name: str,
-    session: AsyncSession = Depends(get_session)
-):
-    stmt = delete(RolePermission).where(
-        RolePermission.role_name == role_name,
-        RolePermission.permission_name == permission_name,
-    )
-    res = await session.execute(stmt)
-    await session.commit()
-    if res.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Bind not found")
     return {"ok": True}
