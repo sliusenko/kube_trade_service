@@ -1,10 +1,8 @@
-from app.models.base import Base
-from app.models.auth import User, Role, Permission, RolePermission
-from app.models.scheduler import ApschedulerJob
-from app.models.exchanges import (
-    Exchange, ExchangeCredential, ExchangeSymbol,
-    ExchangeLimit, ExchangeStatusHistory
-)
+from .base import Base
+from .auth import User, Role, Permission, RolePermission
+from .scheduler import ApschedulerJob
+from .exchanges import Exchange, ExchangeCredential, ExchangeSymbol, ExchangeLimit, ExchangeStatusHistory
+
 __all__ = [
     "Base",
     "User",
