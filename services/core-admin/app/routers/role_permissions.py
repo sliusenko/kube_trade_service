@@ -1,67 +1,76 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert
+from typing import List
+
 from app.deps.db import get_session
 from app.models.auth import Role, RolePermission, Permission
-from app.schemas.auth import RolePermissionCreate, RolePermissionOut
+from app.schemas.role_permissions import RolePermissionCreate, RolePermissionOut
 
-router = APIRouter(prefix="/roles", tags=["RolePermissions"]
-)
+router = APIRouter(prefix="/role-permissions", tags=["RolePermissions"])
 
-# 3. Список усіх Role-Permissions
-@router.get("/bind", response_model=list[RolePermissionOut], tags=["RolePermissions"])
+
+# ----------------------------------------------------------------
+# List all Role-Permission bindings
+# ----------------------------------------------------------------
+@router.get("/", response_model=List[RolePermissionOut])
 async def list_role_permissions(session: AsyncSession = Depends(get_session)):
     res = await session.execute(select(RolePermission))
     return res.scalars().all()
 
-# 1. Додавання пари Role - Permission
-# --- прив'язка пермішенів до ролі / користувача
-@router.post("/bind", response_model=RolePermissionOut, tags=["RolePermissions"])
+
+# ----------------------------------------------------------------
+# Add Role-Permission binding
+# ----------------------------------------------------------------
+@router.post("/", response_model=RolePermissionOut)
 async def add_role_permission(
     payload: RolePermissionCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    # перевірки існування РОЛІ/ПЕРМІШЕНА лишай, якщо хочеш жорстку цілісність
+    # перевіряємо, що роль існує
     if not await session.get(Role, payload.role_name):
         raise HTTPException(status_code=404, detail="Role not found")
+
+    # перевіряємо, що пермішен існує
     if not await session.get(Permission, payload.permission_name):
         raise HTTPException(status_code=404, detail="Permission not found")
 
     try:
-        res = await session.execute(
+        result = await session.execute(
             insert(RolePermission)
             .values(**payload.dict())
             .returning(RolePermission)
         )
         await session.commit()
-        return res.scalar_one()
+        return result.scalar_one()
     except IntegrityError:
         await session.rollback()
-        # пара вже існує (composite PK) — повернемо 409
         raise HTTPException(status_code=409, detail="Already bound")
 
-# 2. Видалення пари Role - Permission
-@router.delete("/bind/{role_name}/{permission_name}", tags=["RolePermissions"])
+
+# ----------------------------------------------------------------
+# Remove Role-Permission binding
+# ----------------------------------------------------------------
+@router.delete("/{role_name}/{permission_name}")
 async def remove_role_permission(
     role_name: str,
     permission_name: str,
     session: AsyncSession = Depends(get_session),
 ):
-    # шукаємо саме у таблиці зв’язок
     res = await session.execute(
         select(RolePermission).where(
             RolePermission.role_name == role_name,
             RolePermission.permission_name == permission_name,
         )
     )
-    obj = res.scalar_one_or_none()
-    if not obj:
+    role_permission = res.scalar_one_or_none()
+    if not role_permission:
         raise HTTPException(
             status_code=404,
             detail=f"Bind not found for role='{role_name}', permission='{permission_name}'",
         )
 
-    await session.delete(obj)
+    await session.delete(role_permission)
     await session.commit()
     return {"ok": True}

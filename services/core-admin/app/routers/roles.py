@@ -1,44 +1,65 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select
 from typing import List
 
 from app.deps.db import get_session
-from app.models.auth import Role, RolePermission, Permission
-from app.schemas.auth import RoleCreate, RoleUpdate, RoleOut, RolePermissionCreate, RolePermissionOut
+from app.models.auth import Role
+from app.schemas.roles import RoleCreate, RoleUpdate, RoleOut
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
 
+
+# ----------------------------------------------------------------
+# List roles
+# ----------------------------------------------------------------
 @router.get("/", response_model=List[RoleOut])
-async def list_roles(limit: int = Query(200, le=1000), session: AsyncSession = Depends(get_session)):
+async def list_roles(
+    limit: int = Query(200, le=1000),
+    session: AsyncSession = Depends(get_session),
+):
     res = await session.execute(select(Role).limit(limit))
     return res.scalars().all()
 
+
+# ----------------------------------------------------------------
+# Create role
+# ----------------------------------------------------------------
 @router.post("/", response_model=RoleOut)
 async def create_role(data: RoleCreate, session: AsyncSession = Depends(get_session)):
-    obj = Role(**data.dict())
-    session.add(obj)
+    role = Role(**data.dict())
+    session.add(role)
     await session.commit()
-    await session.refresh(obj)
-    return obj
+    await session.refresh(role)
+    return role
 
+
+# ----------------------------------------------------------------
+# Update role
+# ----------------------------------------------------------------
 @router.put("/{role_name}", response_model=RoleOut)
 async def update_role(role_name: str, data: RoleUpdate, session: AsyncSession = Depends(get_session)):
-    obj = await session.get(Role, role_name)  # тут lookup по PK name
-    if not obj:
+    role = await session.get(Role, role_name)  # PK = name
+    if not role:
         raise HTTPException(status_code=404, detail="Role not found")
-    for k, v in data.dict(exclude_unset=True).items():
-        setattr(obj, k, v)
-    await session.commit()
-    await session.refresh(obj)
-    return obj
 
+    for k, v in data.dict(exclude_unset=True).items():
+        setattr(role, k, v)
+
+    await session.commit()
+    await session.refresh(role)
+    return role
+
+
+# ----------------------------------------------------------------
+# Delete role
+# ----------------------------------------------------------------
 @router.delete("/{role_name}")
 async def delete_role(role_name: str, session: AsyncSession = Depends(get_session)):
-    obj = await session.get(Role, role_name)
-    if not obj:
+    role = await session.get(Role, role_name)
+    if not role:
         raise HTTPException(status_code=404, detail="Role not found")
-    await session.delete(obj)
+
+    await session.delete(role)
     await session.commit()
     return {"ok": True}

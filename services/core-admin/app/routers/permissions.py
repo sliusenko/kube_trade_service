@@ -1,70 +1,89 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from typing import List
+
 from app.deps.db import get_session
 from app.models.auth import Permission
-from app.schemas.auth import PermissionCreate, PermissionUpdate, PermissionOut
+from app.schemas.permissions import PermissionCreate, PermissionUpdate, PermissionOut
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
-# Створити Permission
+
+# ----------------------------------------------------------------
+# Create Permission
+# ----------------------------------------------------------------
 @router.post("/", response_model=PermissionOut)
 async def create_permission(
     data: PermissionCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    obj = Permission(**data.dict())
-    session.add(obj)
+    permission = Permission(**data.dict())
+    session.add(permission)
     await session.commit()
-    await session.refresh(obj)
-    return obj
+    await session.refresh(permission)
+    return permission
 
 
-# Отримати список
-@router.get("/", response_model=list[PermissionOut])
-async def list_permissions(session: AsyncSession = Depends(get_session)):
-    res = await session.execute(select(Permission))
+# ----------------------------------------------------------------
+# List Permissions
+# ----------------------------------------------------------------
+@router.get("/", response_model=List[PermissionOut])
+async def list_permissions(
+    limit: int = Query(200, le=1000),
+    session: AsyncSession = Depends(get_session),
+):
+    res = await session.execute(select(Permission).limit(limit))
     return res.scalars().all()
 
 
-# Отримати одне Permission
+# ----------------------------------------------------------------
+# Get Permission by name
+# ----------------------------------------------------------------
 @router.get("/{permission_name}", response_model=PermissionOut)
 async def get_permission(
     permission_name: str,
     session: AsyncSession = Depends(get_session),
 ):
-    obj = await session.get(Permission, permission_name)
-    if not obj:
+    permission = await session.get(Permission, permission_name)
+    if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
-    return obj
+    return permission
 
 
-# Оновити Permission
+# ----------------------------------------------------------------
+# Update Permission
+# ----------------------------------------------------------------
 @router.put("/{permission_name}", response_model=PermissionOut)
 async def update_permission(
     permission_name: str,
     data: PermissionUpdate,
     session: AsyncSession = Depends(get_session),
 ):
-    obj = await session.get(Permission, permission_name)
-    if not obj:
+    permission = await session.get(Permission, permission_name)
+    if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
+
     for k, v in data.dict(exclude_unset=True).items():
-        setattr(obj, k, v)
+        setattr(permission, k, v)
+
     await session.commit()
-    await session.refresh(obj)
-    return obj
+    await session.refresh(permission)
+    return permission
 
 
-# Видалити Permission
+# ----------------------------------------------------------------
+# Delete Permission
+# ----------------------------------------------------------------
 @router.delete("/{permission_name}")
 async def delete_permission(
     permission_name: str,
     session: AsyncSession = Depends(get_session),
 ):
-    obj = await session.get(Permission, permission_name)
-    if not obj:
+    permission = await session.get(Permission, permission_name)
+    if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
-    await session.delete(obj)
+
+    await session.delete(permission)
     await session.commit()
     return {"ok": True}
