@@ -2,30 +2,61 @@ import { useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Button, Stack } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
-import { getUsers } from "../api/users";
+import { getUsers, createUser, updateUser, deleteUser } from "../api/users";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
 
-  useEffect(() => {
+  const loadUsers = () => {
     getUsers()
-      .then((data) => setUsers(data))
+      .then(setUsers)
       .catch((err) => console.error("Error fetching users:", err));
+  };
+
+  useEffect(() => {
+    loadUsers();
   }, []);
 
-  const handleAdd = () => {
-    console.log("Add user clicked");
-    // TODO: відкривати модальне вікно для створення
+  const handleAdd = async () => {
+    const username = prompt("Enter username:");
+    const email = prompt("Enter email:");
+    const password = prompt("Enter password:");
+    if (!username || !email || !password) return;
+
+    try {
+      await createUser({
+        username,
+        email,
+        password_hash: password, // бекенд очікує password_hash
+        role: "user", // дефолт
+      });
+      loadUsers();
+    } catch (err) {
+      console.error("Error creating user:", err);
+    }
   };
 
-  const handleEdit = (row) => {
-    console.log("Edit user:", row);
-    // TODO: відкривати форму з row
+  const handleEdit = async (row) => {
+    const newEmail = prompt("Enter new email:", row.email);
+    if (!newEmail) return;
+
+    try {
+      await updateUser(row.user_id, { ...row, email: newEmail });
+      loadUsers();
+    } catch (err) {
+      console.error("Error updating user:", err);
+    }
   };
 
-  const handleDelete = (row) => {
-    console.log("Delete user:", row);
-    // TODO: підтвердження + виклик API для видалення
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete user ${row.username}?`)) return;
+
+    try {
+      await deleteUser(row.user_id);
+      loadUsers();
+    } catch (err) {
+      console.error("Error deleting user:", err);
+    }
   };
 
   const columns = [
