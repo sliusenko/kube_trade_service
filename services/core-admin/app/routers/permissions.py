@@ -15,10 +15,10 @@ router = APIRouter(prefix="/permissions", tags=["Permissions"])
 # ----------------------------------------------------------------
 @router.post("/", response_model=PermissionOut)
 async def create_permission(
-    data: PermissionCreate,
+    payload: PermissionCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    permission = Permission(**data.dict())
+    permission = Permission(**payload.dict())
     session.add(permission)
     await session.commit()
     await session.refresh(permission)
@@ -57,14 +57,14 @@ async def get_permission(
 @router.put("/{permission_name}", response_model=PermissionOut)
 async def update_permission(
     permission_name: str,
-    data: PermissionUpdate,
+    payload: PermissionUpdate,
     session: AsyncSession = Depends(get_session),
 ):
     permission = await session.get(Permission, permission_name)
     if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
 
-    for k, v in data.dict(exclude_unset=True).items():
+    for k, v in payload.dict(exclude_unset=True).items():
         setattr(permission, k, v)
 
     await session.commit()

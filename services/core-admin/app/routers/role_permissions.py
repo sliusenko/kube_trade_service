@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
+from sqlalchemy import select
 from typing import List
 
 from app.deps.db import get_session
@@ -28,22 +28,21 @@ async def add_role_permission(
     payload: RolePermissionCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    # перевіряємо, що роль існує
+    # перевірка існування ролі
     if not await session.get(Role, payload.role_name):
         raise HTTPException(status_code=404, detail="Role not found")
 
-    # перевіряємо, що пермішен існує
+    # перевірка існування пермішена
     if not await session.get(Permission, payload.permission_name):
         raise HTTPException(status_code=404, detail="Permission not found")
 
+    role_permission = RolePermission(**payload.dict())
+    session.add(role_permission)
+
     try:
-        result = await session.execute(
-            insert(RolePermission)
-            .values(**payload.dict())
-            .returning(RolePermission)
-        )
         await session.commit()
-        return result.scalar_one()
+        # ⚠️ refresh() не потрібен через composite PK
+        return role_permission
     except IntegrityError:
         await session.rollback()
         raise HTTPException(status_code=409, detail="Already bound")
