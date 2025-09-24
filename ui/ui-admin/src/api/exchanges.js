@@ -6,13 +6,13 @@ import apiClient from "./apiClient";
 
 // Отримати всі біржі
 export const getExchanges = async () => {
-  const res = await apiClient.get("/exchanges");
+  const res = await apiClient.get("/exchanges/");
   return res.data;
 };
 
 // Створити біржу
 export const createExchange = async (payload) => {
-  const res = await apiClient.post("/exchanges", payload);
+  const res = await apiClient.post("/exchanges/", payload);
   return res.data;
 };
 
