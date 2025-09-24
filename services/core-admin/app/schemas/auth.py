@@ -60,11 +60,11 @@ class PermissionOut(PermissionBase):
 
 # RolePermission (binding)
 class RolePermissionBase(BaseModel):
-    role_name: int
-    permission_name: int
+    role_name: str
+    permission_name: str
 class RolePermissionCreate(RolePermissionBase): pass
 class RolePermissionOut(RolePermissionBase):
-    role_name: int
-    permission_name: int
+    role_name: str
+    permission_name: str
     class Config:
         from_attributes = True

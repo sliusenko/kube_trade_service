@@ -63,12 +63,13 @@ async def add_role_permission(
 # 2. Видалення пари Role - Permission
 @router.delete("/bind", tags=["RolePermissions"])
 async def remove_role_permission(
-    payload: RolePermissionCreate,
+    role_name: str,
+    permission_name: str,
     session: AsyncSession = Depends(get_session)
 ):
     stmt = delete(RolePermission).where(
-        RolePermission.role_name == payload.role_name,
-        RolePermission.permission_name == payload.permission_name,
+        RolePermission.role_name == role_name,
+        RolePermission.permission_name == permission_name,
     )
     res = await session.execute(stmt)
     await session.commit()
