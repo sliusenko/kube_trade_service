@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import UsersPage from "./pages/UsersPage";
-import AdminPage from "./pages/AdminPage";
+import ExchangesPage from "./pages/ExchangesPage";   // ✅ новий імпорт
 
 // універсальний шаблон сторінки
 const Page = ({ title, children }) => (
@@ -13,7 +13,6 @@ const Page = ({ title, children }) => (
 
 // заглушки
 const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
-const Exchanges = () => <Page title="Exchanges">Налаштування бірж.</Page>;
 const Pairs = () => <Page title="Pairs">Управління парами.</Page>;
 const Settings = () => <Page title="Settings">Загальні налаштування.</Page>;
 
@@ -46,8 +45,8 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<AdminPage />} />   {/* тут уже справжня UsersPage */}
-          <Route path="/exchanges" element={<Exchanges />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/exchanges" element={<ExchangesPage />} /> {/* ✅ тепер справжня сторінка */}
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
