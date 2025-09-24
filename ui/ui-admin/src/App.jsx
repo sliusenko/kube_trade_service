@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import UsersPage from "./pages/UsersPage";
+import AdminPage from "./pages/AdminPage";
 
 // універсальний шаблон сторінки
 const Page = ({ title, children }) => (
@@ -45,7 +46,7 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<UsersPage />} />   {/* тут уже справжня UsersPage */}
+          <Route path="/users" element={<AdminPage />} />   {/* тут уже справжня UsersPage */}
           <Route path="/exchanges" element={<Exchanges />} />
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/settings" element={<Settings />} />

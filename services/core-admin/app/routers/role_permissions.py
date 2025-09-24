@@ -9,6 +9,11 @@ from app.schemas.auth import RolePermissionCreate, RolePermissionOut
 router = APIRouter(prefix="/roles", tags=["RolePermissions"]
 )
 
+# 3. Список усіх Role-Permissions
+@router.get("/bind", response_model=list[RolePermissionOut], tags=["RolePermissions"])
+async def list_role_permissions(session: AsyncSession = Depends(get_session)):
+    res = await session.execute(select(RolePermission))
+    return res.scalars().all()
 
 # 1. Додавання пари Role - Permission
 # --- прив'язка пермішенів до ролі / користувача
