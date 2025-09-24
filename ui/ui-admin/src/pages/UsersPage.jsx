@@ -1,11 +1,31 @@
 import { useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Stack } from "@mui/material";
+import {
+  Button,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  FormControlLabel,
+  Checkbox
+} from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import { getUsers, createUser, updateUser, deleteUser } from "../api/users";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "user",
+    is_active: true
+  });
 
   const loadUsers = () => {
     getUsers()
@@ -17,40 +37,59 @@ export default function UsersPage() {
     loadUsers();
   }, []);
 
-  const handleAdd = async () => {
-    const username = prompt("Enter username:");
-    const email = prompt("Enter email:");
-    const password = prompt("Enter password:");
-    if (!username || !email || !password) return;
-
-    try {
-      await createUser({
-        username,
-        email,
-        password_hash: password, // бекенд очікує password_hash
-        role: "user", // дефолт
+  const handleOpen = (user = null) => {
+    if (user) {
+      setEditUser(user);
+      setForm({
+        username: user.username,
+        email: user.email,
+        password: "",
+        role: user.role || "user",
+        is_active: user.is_active ?? true
       });
-      loadUsers();
-    } catch (err) {
-      console.error("Error creating user:", err);
+    } else {
+      setEditUser(null);
+      setForm({
+        username: "",
+        email: "",
+        password: "",
+        role: "user",
+        is_active: true
+      });
     }
+    setOpen(true);
   };
 
-  const handleEdit = async (row) => {
-    const newEmail = prompt("Enter new email:", row.email);
-    if (!newEmail) return;
+  const handleClose = () => {
+    setOpen(false);
+  };
 
+  const handleSubmit = async () => {
     try {
-      await updateUser(row.user_id, { ...row, email: newEmail });
+      if (editUser) {
+        await updateUser(editUser.user_id, {
+          email: form.email,
+          role: form.role,
+          is_active: form.is_active
+        });
+      } else {
+        await createUser({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          role: form.role,
+          is_active: form.is_active
+        });
+      }
       loadUsers();
+      handleClose();
     } catch (err) {
-      console.error("Error updating user:", err);
+      console.error("Error saving user:", err);
     }
   };
 
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete user ${row.username}?`)) return;
-
     try {
       await deleteUser(row.user_id);
       loadUsers();
@@ -64,6 +103,7 @@ export default function UsersPage() {
     { field: "username", headerName: "Username", flex: 1 },
     { field: "email", headerName: "Email", flex: 1.5 },
     { field: "role", headerName: "Role", width: 120 },
+    { field: "is_active", headerName: "Active", width: 100 },
     {
       field: "actions",
       headerName: "Actions",
@@ -76,7 +116,7 @@ export default function UsersPage() {
             variant="outlined"
             color="primary"
             startIcon={<Edit />}
-            onClick={() => handleEdit(params.row)}
+            onClick={() => handleOpen(params.row)}
           >
             Edit
           </Button>
@@ -90,8 +130,8 @@ export default function UsersPage() {
             Delete
           </Button>
         </Stack>
-      ),
-    },
+      )
+    }
   ];
 
   return (
@@ -103,7 +143,7 @@ export default function UsersPage() {
           variant="contained"
           color="primary"
           startIcon={<Add />}
-          onClick={handleAdd}
+          onClick={() => handleOpen()}
         >
           Add User
         </Button>
@@ -118,6 +158,62 @@ export default function UsersPage() {
           rowsPerPageOptions={[5, 10, 20]}
         />
       </div>
+
+      {/* Dialog */}
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{editUser ? "Edit User" : "Add User"}</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          {!editUser && (
+            <TextField
+              label="Username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              fullWidth
+            />
+          )}
+          <TextField
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            fullWidth
+          />
+          {!editUser && (
+            <TextField
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              fullWidth
+            />
+          )}
+          <TextField
+            select
+            label="Role"
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            fullWidth
+          >
+            <MenuItem value="admin">Admin</MenuItem>
+            <MenuItem value="user">User</MenuItem>
+          </TextField>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.is_active}
+                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+              />
+            }
+            label="Active"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {editUser ? "Save" : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
