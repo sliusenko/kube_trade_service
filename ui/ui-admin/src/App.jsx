@@ -1,7 +1,8 @@
 import React from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
+import UsersPage from "./pages/UsersPage";
 
-// Прості "заглушки" сторінок — швидко заміниш на реальні
+// універсальний шаблон сторінки
 const Page = ({ title, children }) => (
   <div className="p-6">
     <h1 style={{ fontSize: 28, marginBottom: 12 }}>{title}</h1>
@@ -9,8 +10,8 @@ const Page = ({ title, children }) => (
   </div>
 );
 
+// заглушки
 const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
-const Users = () => <Page title="Users">CRUD користувачів.</Page>;
 const Exchanges = () => <Page title="Exchanges">Налаштування бірж.</Page>;
 const Pairs = () => <Page title="Pairs">Управління парами.</Page>;
 const Settings = () => <Page title="Settings">Загальні налаштування.</Page>;
@@ -28,6 +29,7 @@ const navStyle = ({ isActive }) => ({
 export default function App() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", minHeight: "100vh" }}>
+      {/* Sidebar */}
       <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16 }}>
         <div style={{ fontWeight: 800, marginBottom: 16 }}>Admin Panel</div>
         <nav style={{ display: "grid", gap: 6 }}>
@@ -39,10 +41,11 @@ export default function App() {
         </nav>
       </aside>
 
+      {/* Main content */}
       <main>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
+          <Route path="/users" element={<UsersPage />} />   {/* тут уже справжня UsersPage */}
           <Route path="/exchanges" element={<Exchanges />} />
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/settings" element={<Settings />} />
