@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-
+from uuid import UUID
 
 # -----------------------------
 # User
@@ -25,7 +25,7 @@ class UserUpdate(BaseModel):
 
 
 class UserOut(UserBase):
-    user_id: str
+    user_id: UUID
     created_at: datetime
 
     class Config:
