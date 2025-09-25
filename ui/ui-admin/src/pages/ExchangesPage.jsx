@@ -122,177 +122,148 @@ export default function ExchangesPage() {
           </div>
 
           {/* form */}
-          {/* form (6x4 grid, larger font) */}
-          <div
-            style={{
-              --pad: '10px',
-              --gap: '14px',
-              --radius: '10px',
-              fontSize: 16,                 // ↑ більший шрифт
-              lineHeight: 1.25,
-            }}
-          >
-            {/* панель керування */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                style={{ padding: '8px 10px', borderRadius: 8 }}
-              >
-                <option value="">— select exchange —</option>
-                {exchanges.map((ex) => (
-                  <option key={ex.id} value={ex.id}>{ex.name}</option>
-                ))}
-              </select>
-
-              <button className="btn btn-success">Create</button>
-              <button className="btn btn-primary">Update</button>
-              <button className="btn btn-danger">Delete</button>
+          <div style={{ maxWidth: 800 }}>
+            {/* Read-only */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>ID</label>
+                <input type="text" value={formData.id || ""} readOnly className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Created At</label>
+                <input type="text" value={formData.created_at || ""} readOnly className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Updated At</label>
+                <input type="text" value={formData.updated_at || ""} readOnly className="form-control" />
+              </div>
             </div>
 
-            {/* матриця 6x4 */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
-                gap: '14px',
-                alignItems: 'start',
-              }}
-            >
-              {/* helper стилі */}
-              {/*
-                Кожен "Cell" — це label + input з однаковим оформленням.
-                Через style={{gridColumn: 'span N'}} керуємо шириною.
-              */}
-              {[
-                // --- Row 1
-                { label: 'ID', ro: true, value: formData.id || '', span: 2 },
-                { label: 'Created At', ro: true, value: formData.created_at || '', span: 2 },
-                { label: 'Updated At', ro: true, value: formData.updated_at || '', span: 2 },
-
-                // --- Row 2
-                { label: 'Code', key: 'code', value: formData.code || '', span: 2 },
-                { label: 'Name', key: 'name', value: formData.name || '', span: 2 },
-                {
-                  label: 'Kind',
-                  key: 'kind',
-                  type: 'select',
-                  options: ['spot', 'futures', 'margin'],
-                  value: formData.kind || 'spot',
-                  span: 1,
-                },
-                {
-                  label: 'Environment',
-                  key: 'environment',
-                  type: 'select',
-                  options: ['prod', 'dev', 'test'],
-                  value: formData.environment || 'prod',
-                  span: 1,
-                },
-
-                // --- Row 3
-                { label: 'base url public', key: 'base_url_public', value: formData.base_url_public || '', span: 3 },
-                { label: 'base url private', key: 'base_url_private', value: formData.base_url_private || '', span: 3 },
-
-                // --- Row 4
-                { label: 'ws public url', key: 'ws_public_url', value: formData.ws_public_url || '', span: 3 },
-                { label: 'ws private url', key: 'ws_private_url', value: formData.ws_private_url || '', span: 3 },
-
-                // --- Next row (поза 6×4; усе ще в одній грід-сітці)
-                { label: 'data feed url', key: 'data_feed_url', value: formData.data_feed_url || '', span: 6 },
-
-                { label: 'Fetch Symbols Interval (min)', key: 'fetch_symbols_interval_min', type: 'number', value: formData.fetch_symbols_interval_min ?? '', span: 2 },
-                { label: 'Fetch Filters Interval (min)', key: 'fetch_filters_interval_min', type: 'number', value: formData.fetch_filters_interval_min ?? '', span: 2 },
-                { label: 'Fetch Limits Interval (min)', key: 'fetch_limits_interval_min', type: 'number', value: formData.fetch_limits_interval_min ?? '', span: 2 },
-
-                { label: 'Rate Limit per min', key: 'rate_limit_per_min', type: 'number', value: formData.rate_limit_per_min ?? '', span: 2 },
-                { label: 'Recv Window (ms)', key: 'recv_window_ms', type: 'number', value: formData.recv_window_ms ?? '', span: 2 },
-                { label: 'Request Timeout (ms)', key: 'request_timeout_ms', type: 'number', value: formData.request_timeout_ms ?? '', span: 2 },
-
-                { label: 'Status', key: 'status', value: formData.status || '', span: 3 },
-                { label: 'Status Msg', key: 'status_msg', value: formData.status_msg || '', span: 3 },
-              ].map((f, i) => (
-                <div key={i} style={{ gridColumn: `span ${f.span || 1}` }}>
-                  <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>{f.label}</label>
-
-                  {f.ro ? (
-                    <input
-                      type="text"
-                      readOnly
-                      value={f.value}
-                      className="form-control"
-                      style={{ padding: '10px 12px', borderRadius: '10px' }}
-                    />
-                  ) : f.type === 'select' ? (
-                    <select
-                      value={f.value}
-                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
-                      className="form-select"
-                      style={{ padding: '10px 12px', borderRadius: '10px' }}
-                    >
-                      {f.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={f.type || 'text'}
-                      value={f.value}
-                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
-                      className="form-control"
-                      style={{ padding: '10px 12px', borderRadius: '10px' }}
-                    />
-                  )}
-                </div>
-              ))}
-
-              {/* JSON зручніше читати широкими — по 3 колонки кожен */}
-              <div style={{ gridColumn: 'span 3' }}>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Features (JSON)</label>
-                <textarea
-                  rows={10}
-                  value={JSON.stringify(formData.features || {}, null, 2)}
-                  onChange={(e) => { try { setFormData({ ...formData, features: JSON.parse(e.target.value) }); } catch {} }}
-                  className="form-control"
-                  style={{ padding: '10px 12px', borderRadius: '10px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
-                />
+             {/* Editable core */}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Code</label>
+                <input type="text" value={formData.code || ""}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })} className="form-control" />
               </div>
-
-              <div style={{ gridColumn: 'span 3' }}>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Extra (JSON)</label>
-                <textarea
-                  rows={10}
-                  value={JSON.stringify(formData.extra || {}, null, 2)}
-                  onChange={(e) => { try { setFormData({ ...formData, extra: JSON.parse(e.target.value) }); } catch {} }}
-                  className="form-control"
-                  style={{ padding: '10px 12px', borderRadius: '10px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
-                />
+              <div className="col-md-6 mb-3">
+                <label>Name</label>
+                <input type="text" value={formData.name || ""}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="form-control" />
               </div>
-
-              {/* Checkbox + last refresh (read-only) */}
-              <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  checked={formData.is_active || false}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                />
-                <span style={{ fontWeight: 600 }}>Active</span>
-              </div>
-
-              {['last_symbols_refresh_at', 'last_filters_refresh_at', 'last_limits_refresh_at'].map((f) => (
-                <div key={f} style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>{f.replace(/_/g, ' ')}</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={formData[f] || ''}
-                    className="form-control"
-                    style={{ padding: '10px 12px', borderRadius: '10px' }}
-                  />
-                </div>
-              ))}
             </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Kind</label>
+                <select value={formData.kind || "spot"}
+                  onChange={(e) => setFormData({ ...formData, kind: e.target.value })} className="form-select">
+                  <option value="spot">spot</option>
+                  <option value="futures">futures</option>
+                  <option value="margin">margin</option>
+                </select>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label>Environment</label>
+                <select value={formData.environment || "prod"}
+                  onChange={(e) => setFormData({ ...formData, environment: e.target.value })} className="form-select">
+                  <option value="prod">prod</option>
+                  <option value="test">test</option>
+                  <option value="dev">dev</option>
+                </select>
+              </div>
+            </div>
+
+            {/* URLs */}
+            {["base_url_public", "base_url_private", "ws_public_url", "ws_private_url", "data_feed_url"].map((f) => (
+              <div className="mb-3" key={f}>
+                <label>{f.replace(/_/g, " ")}</label>
+                <input type="text" value={formData[f] || ""}
+                  onChange={(e) => setFormData({ ...formData, [f]: e.target.value })} className="form-control" />
+              </div>
+            ))}
+
+            {/* Intervals */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>Fetch Symbols Interval (min)</label>
+                <input type="number" value={formData.fetch_symbols_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_symbols_interval_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Fetch Filters Interval (min)</label>
+                <input type="number" value={formData.fetch_filters_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_filters_interval_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Fetch Limits Interval (min)</label>
+                <input type="number" value={formData.fetch_limits_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_limits_interval_min: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* Limits */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>Rate Limit per min</label>
+                <input type="number" value={formData.rate_limit_per_min || ""}
+                  onChange={(e) => setFormData({ ...formData, rate_limit_per_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Recv Window (ms)</label>
+                <input type="number" value={formData.recv_window_ms || ""}
+                  onChange={(e) => setFormData({ ...formData, recv_window_ms: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Request Timeout (ms)</label>
+                <input type="number" value={formData.request_timeout_ms || ""}
+                  onChange={(e) => setFormData({ ...formData, request_timeout_ms: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Status</label>
+                <input type="text" value={formData.status || ""}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label>Status Msg</label>
+                <input type="text" value={formData.status_msg || ""}
+                  onChange={(e) => setFormData({ ...formData, status_msg: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* JSON */}
+            <div className="mb-3">
+              <label>Features (JSON)</label>
+              <textarea value={JSON.stringify(formData.features || {}, null, 2)}
+                onChange={(e) => { try { setFormData({ ...formData, features: JSON.parse(e.target.value) }); } catch {} }}
+                className="form-control" rows={3} />
+            </div>
+
+            <div className="mb-3">
+              <label>Extra (JSON)</label>
+              <textarea value={JSON.stringify(formData.extra || {}, null, 2)}
+                onChange={(e) => { try { setFormData({ ...formData, extra: JSON.parse(e.target.value) }); } catch {} }}
+                className="form-control" rows={3} />
+            </div>
+
+            {/* Active */}
+            <div className="mb-3 form-check">
+              <input type="checkbox" className="form-check-input" checked={formData.is_active || false}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
+              <label className="form-check-label">Active</label>
+            </div>
+
+            {/* Last refresh times */}
+            {["last_symbols_refresh_at", "last_filters_refresh_at", "last_limits_refresh_at"].map((f) => (
+              <div className="mb-3" key={f}>
+                <label>{f.replace(/_/g, " ")}</label>
+                <input type="text" value={formData[f] || ""} readOnly className="form-control" />
+              </div>
+            ))}
           </div>
         </>
       )}
