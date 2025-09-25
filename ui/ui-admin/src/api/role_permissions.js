@@ -2,13 +2,13 @@ import apiClient from "./apiClient";
 
 // отримати всі бінди (role ↔ permissions)
 export const getRolePermissions = async () => {
-  const response = await apiClient.get("/role-permissions");
+  const response = await apiClient.get("/role-permissions/");
   return response.data;
 };
 
 // додати прив'язку роль ↔ permission
 export const createRolePermission = async (payload) => {
-  const response = await apiClient.post("/role-permissions", payload);
+  const response = await apiClient.post("/role-permissions/", payload);
   return response.data;
 };
 
