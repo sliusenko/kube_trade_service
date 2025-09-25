@@ -125,11 +125,11 @@ export default function ExchangesPage() {
             {/* form (6x4 grid, larger font) */}
             <div
               style={{
-                --pad: '10px',
-                --gap: '14px',
-                --radius: '10px',
-                fontSize: 16,                 // ↑ більший шрифт
+                fontSize: 16,
                 lineHeight: 1.25,
+                padding: '10px',
+                gap: '14px',
+                borderRadius: '10px',
               }}
             >
               {/* панель керування */}
