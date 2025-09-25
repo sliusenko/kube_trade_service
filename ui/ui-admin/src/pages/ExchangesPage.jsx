@@ -8,7 +8,6 @@ import {
   getExchangeLimits,
   getExchangeHistory,
 } from "../api/exchanges";
-import ExchangeForm from "./ExchangeForm"; // ✅ форма
 
 const TabButton = ({ label, active, onClick }) => (
   <button
@@ -29,19 +28,18 @@ const TabButton = ({ label, active, onClick }) => (
 export default function ExchangesPage() {
   const [activeTab, setActiveTab] = useState("EXCHANGES");
   const [exchanges, setExchanges] = useState([]);
-  const [selectedExchange, setSelectedExchange] = useState(null);
+  const [selectedId, setSelectedId] = useState("");
+  const [formData, setFormData] = useState({ name: "", type: "", is_active: false });
+
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
   const [history, setHistory] = useState([]);
 
-  // для модального вікна
-  const [openForm, setOpenForm] = useState(false);
-  const [editExchange, setEditExchange] = useState(null);
-
-  // завантаження всіх бірж
+  // load all exchanges
   const fetchExchanges = async () => {
     try {
-      setExchanges(await getExchanges());
+      const data = await getExchanges();
+      setExchanges(data);
     } catch (err) {
       console.error(err);
     }
@@ -51,33 +49,44 @@ export default function ExchangesPage() {
     fetchExchanges();
   }, []);
 
-  // завантаження даних по вибраній біржі
+  // when user selects exchange
   useEffect(() => {
-    if (!selectedExchange) return;
+    if (!selectedId) {
+      setFormData({ name: "", type: "", is_active: false });
+      return;
+    }
+    const ex = exchanges.find((e) => e.id === selectedId);
+    if (ex) setFormData(ex);
+  }, [selectedId, exchanges]);
 
+  // load symbols/limits/history for selected exchange
+  useEffect(() => {
+    if (!selectedId) return;
     if (activeTab === "SYMBOLS") {
-      getExchangeSymbols(selectedExchange).then(setSymbols).catch(console.error);
+      getExchangeSymbols(selectedId).then(setSymbols).catch(console.error);
     } else if (activeTab === "LIMITS") {
-      getExchangeLimits(selectedExchange).then(setLimits).catch(console.error);
+      getExchangeLimits(selectedId).then(setLimits).catch(console.error);
     } else if (activeTab === "HISTORY") {
-      getExchangeHistory(selectedExchange).then(setHistory).catch(console.error);
+      getExchangeHistory(selectedId).then(setHistory).catch(console.error);
     }
-  }, [activeTab, selectedExchange]);
+  }, [activeTab, selectedId]);
 
-  // CRUD handlers
-  const handleSave = async (data) => {
-    if (editExchange) {
-      await updateExchange(editExchange.id, data);
-    } else {
-      await createExchange(data);
-    }
-    setOpenForm(false);
-    setEditExchange(null);
+  // handlers
+  const handleCreate = async () => {
+    await createExchange(formData);
     fetchExchanges();
   };
 
-  const handleDelete = async (id) => {
-    await deleteExchange(id);
+  const handleUpdate = async () => {
+    if (!selectedId) return;
+    await updateExchange(selectedId, formData);
+    fetchExchanges();
+  };
+
+  const handleDelete = async () => {
+    if (!selectedId) return;
+    await deleteExchange(selectedId);
+    setSelectedId("");
     fetchExchanges();
   };
 
@@ -93,155 +102,235 @@ export default function ExchangesPage() {
         <TabButton label="HISTORY" active={activeTab === "HISTORY"} onClick={() => setActiveTab("HISTORY")} />
       </div>
 
-      {/* Dropdown для вибору біржі */}
-      {activeTab !== "EXCHANGES" && (
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ marginRight: 10 }}>Select Exchange:</label>
-          <select
-            value={selectedExchange || ""}
-            onChange={(e) => setSelectedExchange(e.target.value)}
-          >
-            <option value="">-- choose exchange --</option>
-            {exchanges.map((ex) => (
-              <option key={ex.id} value={ex.id}>
-                {ex.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* EXCHANGES */}
+      {/* --- EXCHANGES TAB --- */}
       {activeTab === "EXCHANGES" && (
         <>
-          {/* кнопка додавання */}
-          <div style={{ marginBottom: 16 }}>
-            <button
-              onClick={() => {
-                setEditExchange(null);
-                setOpenForm(true);
-              }}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 6,
-                background: "#1e40af",
-                color: "white",
-                fontWeight: 600,
-              }}
-            >
-              + Add Exchange
-            </button>
+          {/* dropdown + buttons */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+            <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+              <option value="">-- select exchange --</option>
+              {exchanges.map((ex) => (
+                <option key={ex.id} value={ex.id}>
+                  {ex.name}
+                </option>
+              ))}
+            </select>
+
+            <button onClick={handleCreate} className="btn btn-success">Create</button>
+            <button onClick={handleUpdate} className="btn btn-primary">Update</button>
+            <button onClick={handleDelete} className="btn btn-danger">Delete</button>
           </div>
 
-          {/* таблиця */}
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
-                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Name</th>
-                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Type</th>
-                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Active</th>
-                <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exchanges.map((ex) => (
-                <tr key={ex.id}>
-                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.id}</td>
-                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.name}</td>
-                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{ex.type}</td>
-                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                    {ex.is_active ? "Yes" : "No"}
-                  </td>
-                  <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                    <button
-                      onClick={() => {
-                        setEditExchange(ex);
-                        setOpenForm(true);
-                      }}
-                      style={{ marginRight: 8 }}
-                    >
-                      Edit
-                    </button>
-                    <button onClick={() => handleDelete(ex.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* form */}
+          <div style={{ maxWidth: 800 }}>
+            {/* Read-only */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>ID</label>
+                <input type="text" value={formData.id || ""} readOnly className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Created At</label>
+                <input type="text" value={formData.created_at || ""} readOnly className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Updated At</label>
+                <input type="text" value={formData.updated_at || ""} readOnly className="form-control" />
+              </div>
+            </div>
 
-          {/* модальне вікно */}
-          <ExchangeForm
-            open={openForm}
-            onClose={() => setOpenForm(false)}
-            onSave={handleSave}
-            initialData={editExchange}
-          />
+             {/* Editable core */}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Code</label>
+                <input type="text" value={formData.code || ""}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label>Name</label>
+                <input type="text" value={formData.name || ""}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Kind</label>
+                <select value={formData.kind || "spot"}
+                  onChange={(e) => setFormData({ ...formData, kind: e.target.value })} className="form-select">
+                  <option value="spot">spot</option>
+                  <option value="futures">futures</option>
+                  <option value="margin">margin</option>
+                </select>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label>Environment</label>
+                <select value={formData.environment || "prod"}
+                  onChange={(e) => setFormData({ ...formData, environment: e.target.value })} className="form-select">
+                  <option value="prod">prod</option>
+                  <option value="test">test</option>
+                  <option value="dev">dev</option>
+                </select>
+              </div>
+            </div>
+
+            {/* URLs */}
+            {["base_url_public", "base_url_private", "ws_public_url", "ws_private_url", "data_feed_url"].map((f) => (
+              <div className="mb-3" key={f}>
+                <label>{f.replace(/_/g, " ")}</label>
+                <input type="text" value={formData[f] || ""}
+                  onChange={(e) => setFormData({ ...formData, [f]: e.target.value })} className="form-control" />
+              </div>
+            ))}
+
+            {/* Intervals */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>Fetch Symbols Interval (min)</label>
+                <input type="number" value={formData.fetch_symbols_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_symbols_interval_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Fetch Filters Interval (min)</label>
+                <input type="number" value={formData.fetch_filters_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_filters_interval_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Fetch Limits Interval (min)</label>
+                <input type="number" value={formData.fetch_limits_interval_min || ""}
+                  onChange={(e) => setFormData({ ...formData, fetch_limits_interval_min: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* Limits */}
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>Rate Limit per min</label>
+                <input type="number" value={formData.rate_limit_per_min || ""}
+                  onChange={(e) => setFormData({ ...formData, rate_limit_per_min: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Recv Window (ms)</label>
+                <input type="number" value={formData.recv_window_ms || ""}
+                  onChange={(e) => setFormData({ ...formData, recv_window_ms: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Request Timeout (ms)</label>
+                <input type="number" value={formData.request_timeout_ms || ""}
+                  onChange={(e) => setFormData({ ...formData, request_timeout_ms: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label>Status</label>
+                <input type="text" value={formData.status || ""}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="form-control" />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label>Status Msg</label>
+                <input type="text" value={formData.status_msg || ""}
+                  onChange={(e) => setFormData({ ...formData, status_msg: e.target.value })} className="form-control" />
+              </div>
+            </div>
+
+            {/* JSON */}
+            <div className="mb-3">
+              <label>Features (JSON)</label>
+              <textarea value={JSON.stringify(formData.features || {}, null, 2)}
+                onChange={(e) => { try { setFormData({ ...formData, features: JSON.parse(e.target.value) }); } catch {} }}
+                className="form-control" rows={3} />
+            </div>
+
+            <div className="mb-3">
+              <label>Extra (JSON)</label>
+              <textarea value={JSON.stringify(formData.extra || {}, null, 2)}
+                onChange={(e) => { try { setFormData({ ...formData, extra: JSON.parse(e.target.value) }); } catch {} }}
+                className="form-control" rows={3} />
+            </div>
+
+            {/* Active */}
+            <div className="mb-3 form-check">
+              <input type="checkbox" className="form-check-input" checked={formData.is_active || false}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
+              <label className="form-check-label">Active</label>
+            </div>
+
+            {/* Last refresh times */}
+            {["last_symbols_refresh_at", "last_filters_refresh_at", "last_limits_refresh_at"].map((f) => (
+              <div className="mb-3" key={f}>
+                <label>{f.replace(/_/g, " ")}</label>
+                <input type="text" value={formData[f] || ""} readOnly className="form-control" />
+              </div>
+            ))}
+          </div>
         </>
       )}
 
-      {/* SYMBOLS */}
-      {activeTab === "SYMBOLS" && selectedExchange && (
+
+      {/* --- SYMBOLS TAB --- */}
+      {activeTab === "SYMBOLS" && selectedId && (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Symbol</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Base</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Quote</th>
+              <th>Symbol</th>
+              <th>Base</th>
+              <th>Quote</th>
             </tr>
           </thead>
           <tbody>
             {symbols.map((s) => (
               <tr key={s.id}>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{s.symbol}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{s.base_asset}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{s.quote_asset}</td>
+                <td>{s.symbol}</td>
+                <td>{s.base_asset}</td>
+                <td>{s.quote_asset}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      {/* LIMITS */}
-      {activeTab === "LIMITS" && selectedExchange && (
+      {/* --- LIMITS TAB --- */}
+      {activeTab === "LIMITS" && selectedId && (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Symbol</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Min Qty</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Max Qty</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Step Size</th>
+              <th>Symbol</th>
+              <th>Min Qty</th>
+              <th>Max Qty</th>
+              <th>Step Size</th>
             </tr>
           </thead>
           <tbody>
             {limits.map((l, idx) => (
               <tr key={idx}>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{l.symbol}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{l.min_qty}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{l.max_qty}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{l.step_size}</td>
+                <td>{l.symbol}</td>
+                <td>{l.min_qty}</td>
+                <td>{l.max_qty}</td>
+                <td>{l.step_size}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      {/* HISTORY */}
-      {activeTab === "HISTORY" && selectedExchange && (
+      {/* --- HISTORY TAB --- */}
+      {activeTab === "HISTORY" && selectedId && (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Timestamp</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Status</th>
-              <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>Message</th>
+              <th>Timestamp</th>
+              <th>Status</th>
+              <th>Message</th>
             </tr>
           </thead>
           <tbody>
             {history.map((h, idx) => (
               <tr key={idx}>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{h.timestamp}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{h.status}</td>
-                <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{h.message}</td>
+                <td>{h.timestamp}</td>
+                <td>{h.status}</td>
+                <td>{h.message}</td>
               </tr>
             ))}
           </tbody>
