@@ -6,8 +6,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import text
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from app.models.base import Base
 
 class Exchange(Base):
     __tablename__ = "exchanges"

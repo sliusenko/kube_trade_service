@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.models import Base
+from app import models
+from app.models.base import Base
 from app.deps.db import engine
 from app.routers import (
     users, roles, permissions,
@@ -12,6 +13,7 @@ app = FastAPI(title="Admin-core API")
 async def startup_event():
     # створюємо таблиці якщо їх нема
     async with engine.begin() as conn:
+        print(Base.metadata.tables.keys())
         await conn.run_sync(Base.metadata.create_all)
 
 app.include_router(users.router)
