@@ -47,7 +47,31 @@ class Exchange(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
-    credentials = relationship("ExchangeCredential", back_populates="exchange", cascade="all, delete-orphan")
+    # 🔗 Відношення
+    credentials = relationship(
+        "ExchangeCredential",
+        back_populates="exchange",
+        cascade="all, delete-orphan"
+    )
+
+    symbols = relationship(
+        "ExchangeSymbol",
+        back_populates="exchange",
+        cascade="all, delete-orphan"
+    )
+
+    limits = relationship(
+        "ExchangeLimit",
+        back_populates="exchange",
+        cascade="all, delete-orphan"
+    )
+
+    status_history = relationship(
+        "ExchangeStatusHistory",
+        back_populates="exchange",
+        cascade="all, delete-orphan"
+    )
+
 class ExchangeCredential(Base):
     __tablename__ = "exchange_credentials"
 
