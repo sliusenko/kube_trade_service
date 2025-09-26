@@ -6,10 +6,18 @@ import {
   createExchange,
   updateExchange,
   deleteExchange,
+} from "../api/exchanges";
+import {
+  getExchangeCredentials,
+  createExchangeCredential,
+  updateExchangeCredential,
+  deleteExchangeCredential,
+} from "../api/exchange_credentials";
+import {
   getExchangeSymbols,
   getExchangeLimits,
   getExchangeHistory,
-} from "../api/exchanges";
+} from "../api/exchanges_service_tb";
 import { getSchema } from "../api/schema";
 import {
   Button,
@@ -75,7 +83,11 @@ export default function ExchangesPage() {
       case "EXCHANGES":
         return schemas.ExchangeSchema;
       case "CREDENTIALS":
-        return schemas.ExchangeCredentialSchema;
+        return (
+          schemas.ExchangeCredentialSchema ||
+          schemas.ExchangeCredentialRead ||
+          schemas.ExchangeCredentialBase
+        );
       default:
         return null;
     }
