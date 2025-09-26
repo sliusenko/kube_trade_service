@@ -1,6 +1,8 @@
+// src/pages/ExchangesPage.jsx
 import React, { useEffect, useState } from "react";
 import Form from "@rjsf/mui";
 import validator from "@rjsf/validator-ajv8";
+import { ExchangeFormSchema, ExchangeCredentialFormSchema } from "../forms/schemas";
 import {
   getExchanges,
   createExchange,
@@ -16,7 +18,6 @@ import {
   getExchangeLimits,
   getExchangeHistory,
 } from "../api/exchange_service_tb";
-import { getSchema } from "../api/schema";
 import {
   Button,
   Table,
@@ -43,7 +44,6 @@ export default function ExchangesPage() {
   const [activeTab, setActiveTab] = useState("EXCHANGES");
   const [exchanges, setExchanges] = useState([]);
   const [selectedExchange, setSelectedExchange] = useState(""); // тільки id
-  const [schemas, setSchemas] = useState({});
   const [formData, setFormData] = useState({});
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
@@ -52,9 +52,6 @@ export default function ExchangesPage() {
 
   useEffect(() => {
     reloadExchanges();
-    getSchema().then((schema) => {
-      setSchemas(schema.components.schemas || {});
-    });
   }, []);
 
   useEffect(() => {
@@ -81,15 +78,14 @@ export default function ExchangesPage() {
   const getCurrentSchema = () => {
     switch (activeTab) {
       case "EXCHANGES":
-        return schemas.ExchangeCreate;
+        return ExchangeFormSchema;
       case "CREDENTIALS":
-        return schemas.ExchangeCredentialCreate;
+        return ExchangeCredentialFormSchema;
       default:
         return null;
     }
   };
 
-  // UI Schema для правильного відображення форм
   const getUiSchema = () => {
     if (activeTab === "CREDENTIALS") {
       return {
@@ -98,8 +94,8 @@ export default function ExchangesPage() {
         api_passphrase: { "ui:widget": "password" },
         subaccount: { "ui:widget": "text" },
         label: { "ui:widget": "text" },
-        is_service: { "ui:widget": "checkbox", "ui:options": { inputType: "boolean" } },
-        is_active: { "ui:widget": "checkbox", "ui:options": { inputType: "boolean" } },
+        is_service: { "ui:widget": "checkbox" },
+        is_active: { "ui:widget": "checkbox" },
       };
     }
     return {};
@@ -108,7 +104,6 @@ export default function ExchangesPage() {
   // -----------------------------
   // CRUD для Exchanges + Credentials
   // -----------------------------
-
   const handleCreate = async () => {
     if (activeTab === "EXCHANGES") {
       await createExchange(formData);
@@ -153,46 +148,17 @@ export default function ExchangesPage() {
 
       {/* Вкладки */}
       <div style={{ marginBottom: "20px" }}>
-        <TabButton
-          label="EXCHANGES"
-          active={activeTab === "EXCHANGES"}
-          onClick={() => {
-            setActiveTab("EXCHANGES");
-            setFormData({});
-          }}
-        />
-        <TabButton
-          label="CREDENTIALS"
-          active={activeTab === "CREDENTIALS"}
-          onClick={() => {
-            setActiveTab("CREDENTIALS");
-            setFormData({});
-          }}
-        />
-        <TabButton
-          label="SYMBOLS"
-          active={activeTab === "SYMBOLS"}
-          onClick={() => {
-            setActiveTab("SYMBOLS");
-            setFormData({});
-          }}
-        />
-        <TabButton
-          label="LIMITS"
-          active={activeTab === "LIMITS"}
-          onClick={() => {
-            setActiveTab("LIMITS");
-            setFormData({});
-          }}
-        />
-        <TabButton
-          label="HISTORY"
-          active={activeTab === "HISTORY"}
-          onClick={() => {
-            setActiveTab("HISTORY");
-            setFormData({});
-          }}
-        />
+        {["EXCHANGES", "CREDENTIALS", "SYMBOLS", "LIMITS", "HISTORY"].map((tab) => (
+          <TabButton
+            key={tab}
+            label={tab}
+            active={activeTab === tab}
+            onClick={() => {
+              setActiveTab(tab);
+              setFormData({});
+            }}
+          />
+        ))}
       </div>
 
       {/* Dropdown + CRUD тільки для EXCHANGES/CREDENTIALS */}
@@ -215,12 +181,7 @@ export default function ExchangesPage() {
             ))}
           </select>
 
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={handleCreate}
-          >
+          <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreate}>
             Create
           </Button>
           <Button
@@ -244,7 +205,7 @@ export default function ExchangesPage() {
         </div>
       )}
 
-      {/* Форма з safe-guard */}
+      {/* Форма */}
       {getCurrentSchema() ? (
         <Form
           schema={getCurrentSchema()}
@@ -255,9 +216,7 @@ export default function ExchangesPage() {
         />
       ) : (
         (activeTab === "EXCHANGES" || activeTab === "CREDENTIALS") && (
-          <p style={{ color: "red", marginTop: "10px" }}>
-            ❌ Schema for {activeTab} not found in /openapi.json
-          </p>
+          <p style={{ color: "red", marginTop: "10px" }}>❌ Schema for {activeTab} not found</p>
         )
       )}
 
@@ -278,7 +237,7 @@ export default function ExchangesPage() {
               {credentials.map((c) => (
                 <TableRow
                   key={c.id}
-                  onClick={() => setFormData(c)} // вибір для редагування
+                  onClick={() => setFormData(c)}
                   style={{ cursor: "pointer" }}
                 >
                   <TableCell>{c.id}</TableCell>
