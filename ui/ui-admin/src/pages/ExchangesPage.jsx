@@ -50,7 +50,6 @@ export default function ExchangesPage() {
   const [history, setHistory] = useState([]);
   const [credentials, setCredentials] = useState([]);
 
-  // Завантажуємо список бірж і схеми
   useEffect(() => {
     reloadExchanges();
     getSchema().then((schema) => {
@@ -58,7 +57,6 @@ export default function ExchangesPage() {
     });
   }, []);
 
-  // Коли змінюється вкладка або вибраний Exchange → тягнемо відповідні дані
   useEffect(() => {
     if (!selectedExchange) return;
 
@@ -246,8 +244,8 @@ export default function ExchangesPage() {
         </div>
       )}
 
-      {/* Форма */}
-      {getCurrentSchema() && (
+      {/* Форма з safe-guard */}
+      {getCurrentSchema() ? (
         <Form
           schema={getCurrentSchema()}
           uiSchema={getUiSchema()}
@@ -255,6 +253,12 @@ export default function ExchangesPage() {
           formData={formData}
           onChange={(e) => setFormData(e.formData)}
         />
+      ) : (
+        (activeTab === "EXCHANGES" || activeTab === "CREDENTIALS") && (
+          <p style={{ color: "red", marginTop: "10px" }}>
+            ❌ Schema for {activeTab} not found in /openapi.json
+          </p>
+        )
       )}
 
       {/* CREDENTIALS таблиця */}

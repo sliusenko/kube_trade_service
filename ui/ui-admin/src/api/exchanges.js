@@ -1,4 +1,3 @@
-// src/api/exchanges.js
 import apiClient from "./apiClient";
 
 // -----------------------------
