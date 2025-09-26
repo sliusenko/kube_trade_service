@@ -48,6 +48,7 @@ export default function ExchangesPage() {
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
   const [history, setHistory] = useState([]);
+  const [credentials, setCredentials] = useState([]);
 
   // Завантажуємо список бірж і схеми
   useEffect(() => {
@@ -62,13 +63,16 @@ export default function ExchangesPage() {
     if (!selectedExchange) return;
 
     if (activeTab === "SYMBOLS") {
-      getExchangeSymbols(selectedExchange).then(setSymbols);
+      getExchangeSymbols(selectedExchange.id).then(setSymbols);
     }
     if (activeTab === "LIMITS") {
-      getExchangeLimits(selectedExchange).then(setLimits);
+      getExchangeLimits(selectedExchange.id).then(setLimits);
     }
     if (activeTab === "HISTORY") {
-      getExchangeHistory(selectedExchange).then(setHistory);
+      getExchangeHistory(selectedExchange.id).then(setHistory);
+    }
+    if (activeTab === "CREDENTIALS") {
+      getExchangeCredentials(selectedExchange.id).then(setCredentials);
     }
   }, [activeTab, selectedExchange]);
 
@@ -87,7 +91,10 @@ export default function ExchangesPage() {
     }
   };
 
+  // -----------------------------
   // CRUD для Exchanges + Credentials
+  // -----------------------------
+
   const handleCreate = async () => {
     if (activeTab === "EXCHANGES") {
       await createExchange(formData);
@@ -96,6 +103,7 @@ export default function ExchangesPage() {
     }
     if (activeTab === "CREDENTIALS" && selectedExchange) {
       await createExchangeCredential(selectedExchange.id, formData);
+      getExchangeCredentials(selectedExchange.id).then(setCredentials);
       setFormData({});
     }
   };
@@ -107,6 +115,7 @@ export default function ExchangesPage() {
     }
     if (activeTab === "CREDENTIALS" && selectedExchange) {
       await updateExchangeCredential(selectedExchange.id, formData.id, formData);
+      getExchangeCredentials(selectedExchange.id).then(setCredentials);
     }
   };
 
@@ -119,6 +128,7 @@ export default function ExchangesPage() {
     }
     if (activeTab === "CREDENTIALS" && selectedExchange) {
       await deleteExchangeCredential(selectedExchange.id, formData.id);
+      getExchangeCredentials(selectedExchange.id).then(setCredentials);
       setFormData({});
     }
   };
@@ -129,11 +139,31 @@ export default function ExchangesPage() {
 
       {/* Вкладки */}
       <div style={{ marginBottom: "20px" }}>
-        <TabButton label="EXCHANGES" active={activeTab === "EXCHANGES"} onClick={() => setActiveTab("EXCHANGES")} />
-        <TabButton label="CREDENTIALS" active={activeTab === "CREDENTIALS"} onClick={() => setActiveTab("CREDENTIALS")} />
-        <TabButton label="SYMBOLS" active={activeTab === "SYMBOLS"} onClick={() => setActiveTab("SYMBOLS")} />
-        <TabButton label="LIMITS" active={activeTab === "LIMITS"} onClick={() => setActiveTab("LIMITS")} />
-        <TabButton label="HISTORY" active={activeTab === "HISTORY"} onClick={() => setActiveTab("HISTORY")} />
+        <TabButton
+          label="EXCHANGES"
+          active={activeTab === "EXCHANGES"}
+          onClick={() => setActiveTab("EXCHANGES")}
+        />
+        <TabButton
+          label="CREDENTIALS"
+          active={activeTab === "CREDENTIALS"}
+          onClick={() => setActiveTab("CREDENTIALS")}
+        />
+        <TabButton
+          label="SYMBOLS"
+          active={activeTab === "SYMBOLS"}
+          onClick={() => setActiveTab("SYMBOLS")}
+        />
+        <TabButton
+          label="LIMITS"
+          active={activeTab === "LIMITS"}
+          onClick={() => setActiveTab("LIMITS")}
+        />
+        <TabButton
+          label="HISTORY"
+          active={activeTab === "HISTORY"}
+          onClick={() => setActiveTab("HISTORY")}
+        />
       </div>
 
       {/* Dropdown + CRUD тільки для EXCHANGES/CREDENTIALS */}
@@ -157,13 +187,30 @@ export default function ExchangesPage() {
             ))}
           </select>
 
-          <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreate}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={handleCreate}
+          >
             Create
           </Button>
-          <Button variant="outlined" color="secondary" startIcon={<Edit />} disabled={!selectedExchange} onClick={handleUpdate}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<Edit />}
+            disabled={!selectedExchange}
+            onClick={handleUpdate}
+          >
             Update
           </Button>
-          <Button variant="outlined" color="error" startIcon={<Delete />} disabled={!selectedExchange} onClick={handleDelete}>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            disabled={!selectedExchange}
+            onClick={handleDelete}
+          >
             Delete
           </Button>
         </div>
@@ -177,6 +224,38 @@ export default function ExchangesPage() {
           formData={formData}
           onChange={(e) => setFormData(e.formData)}
         />
+      )}
+
+      {/* CREDENTIALS таблиця */}
+      {activeTab === "CREDENTIALS" && (
+        <Paper style={{ marginTop: "20px" }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Label</TableCell>
+                <TableCell>API Key</TableCell>
+                <TableCell>Active</TableCell>
+                <TableCell>Created At</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {credentials.map((c) => (
+                <TableRow
+                  key={c.id}
+                  onClick={() => setFormData(c)} // вибір для редагування
+                  style={{ cursor: "pointer" }}
+                >
+                  <TableCell>{c.id}</TableCell>
+                  <TableCell>{c.label}</TableCell>
+                  <TableCell>{c.api_key}</TableCell>
+                  <TableCell>{c.is_active ? "Yes" : "No"}</TableCell>
+                  <TableCell>{c.created_at}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
       )}
 
       {/* SYMBOLS таблиця */}
