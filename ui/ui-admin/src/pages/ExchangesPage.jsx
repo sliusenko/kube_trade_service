@@ -17,7 +17,7 @@ import {
   getExchangeSymbols,
   getExchangeLimits,
   getExchangeHistory,
-} from "../api/exchanges_service_tb";
+} from "../api/exchange_service_tb";
 import { getSchema } from "../api/schema";
 import {
   Button,
