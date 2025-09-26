@@ -6,13 +6,11 @@ import {
   createExchange,
   updateExchange,
   deleteExchange,
-} from "../api/exchanges";
-import {
   getExchangeCredentials,
   createExchangeCredential,
   updateExchangeCredential,
   deleteExchangeCredential,
-} from "../api/exchange_credentials";
+} from "../api/exchanges";
 import {
   getExchangeSymbols,
   getExchangeLimits,
@@ -94,30 +92,34 @@ export default function ExchangesPage() {
     if (activeTab === "EXCHANGES") {
       await createExchange(formData);
       reloadExchanges();
+      setFormData({});
     }
-    if (activeTab === "CREDENTIALS") {
-      await createExchangeCredential(selectedExchange, formData);
+    if (activeTab === "CREDENTIALS" && selectedExchange) {
+      await createExchangeCredential(selectedExchange.id, formData);
+      setFormData({});
     }
   };
 
   const handleUpdate = async () => {
-    if (activeTab === "EXCHANGES") {
-      await updateExchange(selectedExchange, formData);
+    if (activeTab === "EXCHANGES" && selectedExchange) {
+      await updateExchange(selectedExchange.id, formData);
       reloadExchanges();
     }
-    if (activeTab === "CREDENTIALS") {
-      await updateExchangeCredential(selectedExchange, formData.id, formData);
+    if (activeTab === "CREDENTIALS" && selectedExchange) {
+      await updateExchangeCredential(selectedExchange.id, formData.id, formData);
     }
   };
 
   const handleDelete = async () => {
-    if (activeTab === "EXCHANGES") {
-      await deleteExchange(selectedExchange);
+    if (activeTab === "EXCHANGES" && selectedExchange) {
+      await deleteExchange(selectedExchange.id);
       reloadExchanges();
       setSelectedExchange(null);
+      setFormData({});
     }
-    if (activeTab === "CREDENTIALS") {
-      await deleteExchangeCredential(selectedExchange, formData.id);
+    if (activeTab === "CREDENTIALS" && selectedExchange) {
+      await deleteExchangeCredential(selectedExchange.id, formData.id);
+      setFormData({});
     }
   };
 
@@ -139,8 +141,12 @@ export default function ExchangesPage() {
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <select
             className="form-select"
-            value={selectedExchange || ""}
-            onChange={(e) => setSelectedExchange(e.target.value)}
+            value={selectedExchange?.id || ""}
+            onChange={(e) => {
+              const ex = exchanges.find((x) => x.id === e.target.value);
+              setSelectedExchange(ex || null);
+              setFormData(ex || {});
+            }}
             style={{ maxWidth: "250px" }}
           >
             <option value="">-- select exchange --</option>
@@ -244,7 +250,7 @@ export default function ExchangesPage() {
                 <TableRow key={h.id}>
                   <TableCell>{h.id}</TableCell>
                   <TableCell>{h.status}</TableCell>
-                  <TableCell>{h.status_msg}</TableCell>
+                  <TableCell>{h.message}</TableCell>
                   <TableCell>{h.created_at}</TableCell>
                 </TableRow>
               ))}

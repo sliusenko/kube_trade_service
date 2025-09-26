@@ -1,4 +1,9 @@
+// src/api/exchanges.js
 import apiClient from "./apiClient";
+
+// -----------------------------
+// Exchanges CRUD
+// -----------------------------
 
 // Отримати всі біржі
 export const getExchanges = async () => {
@@ -6,42 +11,53 @@ export const getExchanges = async () => {
   return res.data;
 };
 
-// CRUD для бірж
+// Створити біржу
 export const createExchange = async (data) => {
   const res = await apiClient.post("/exchanges/", data);
   return res.data;
 };
 
+// Оновити біржу
 export const updateExchange = async (id, data) => {
   const res = await apiClient.put(`/exchanges/${id}`, data);
   return res.data;
 };
 
+// Видалити біржу
 export const deleteExchange = async (id) => {
   const res = await apiClient.delete(`/exchanges/${id}`);
   return res.data;
 };
 
-//// Отримати всі креденшіали для біржі
-//export const getExchangeCredentials = async (exchangeId) => {
-//  const res = await apiClient.get(`/exchanges/${exchangeId}/credentials`);
-//  return res.data;
-//};
-//
-//// Створити креденшіал
-//export const createExchangeCredential = async (exchangeId, data) => {
-//  const res = await apiClient.post(`/exchanges/${exchangeId}/credentials`, data);
-//  return res.data;
-//};
-//
-//// Оновити креденшіал
-//export const updateExchangeCredential = async (exchangeId, id, data) => {
-//  const res = await apiClient.put(`/exchanges/${exchangeId}/credentials/${id}`, data);
-//  return res.data;
-//};
-//
-//// Видалити креденшіал
-//export const deleteExchangeCredential = async (exchangeId, id) => {
-//  const res = await apiClient.delete(`/exchanges/${exchangeId}/credentials/${id}`);
-//  return res.data;
-//};
+// -----------------------------
+// Exchange Credentials CRUD
+// -----------------------------
+
+// Отримати всі креденшали для конкретної біржі
+export const getExchangeCredentials = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/credentials`);
+  return res.data;
+};
+
+// Створити креденшал
+export const createExchangeCredential = async (exchangeId, data) => {
+  const res = await apiClient.post(`/exchanges/${exchangeId}/credentials`, data);
+  return res.data;
+};
+
+// Оновити креденшал
+export const updateExchangeCredential = async (exchangeId, credId, data) => {
+  const res = await apiClient.put(
+    `/exchanges/${exchangeId}/credentials/${credId}`,
+    data
+  );
+  return res.data;
+};
+
+// Видалити креденшал
+export const deleteExchangeCredential = async (exchangeId, credId) => {
+  const res = await apiClient.delete(
+    `/exchanges/${exchangeId}/credentials/${credId}`
+  );
+  return res.data;
+};
