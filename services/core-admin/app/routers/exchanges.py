@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
+from sqlalchemy.future import select
 from app.deps.db import get_session
 from app.models.exchanges import (
     Exchange, ExchangeCredential, ExchangeSymbol, ExchangeLimit, ExchangeStatusHistory
@@ -72,35 +72,55 @@ async def delete_exchange(exchange_id: UUID, db: AsyncSession = Depends(get_sess
 # ----------------------------------------------------------------
 # Exchange Credentials
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/credentials", response_model=List[ExchangeCredentialRead])
-async def list_credentials(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(
+@router.get("/exchanges/{exchange_id}/credentials")
+async def list_credentials(exchange_id: UUID, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
         select(ExchangeCredential).where(ExchangeCredential.exchange_id == exchange_id)
     )
     return result.scalars().all()
 
+@router.post("/exchanges/{exchange_id}/credentials")
+async def add_credential(exchange_id: UUID, cred: dict, session: AsyncSession = Depends(get_session)):
+    new_cred = ExchangeCredential(exchange_id=exchange_id, **cred)
+    session.add(new_cred)
+    await session.commit()
+    await session.refresh(new_cred)
+    return new_cred
 
-@router.post("/{exchange_id}/credentials", response_model=ExchangeCredentialRead)
-async def add_credential(exchange_id: UUID, payload: ExchangeCredentialCreate, db: AsyncSession = Depends(get_session)):
-    cred = ExchangeCredential(exchange_id=exchange_id, **payload.dict())
-    db.add(cred)
-    await db.commit()
-    await db.refresh(cred)
-    return cred
-
-
-@router.delete("/{exchange_id}/credentials/{cred_id}")
-async def delete_credential(exchange_id: UUID, cred_id: UUID, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(
-        select(ExchangeCredential).where(ExchangeCredential.id == cred_id, ExchangeCredential.exchange_id == exchange_id)
+@router.put("/exchanges/{exchange_id}/credentials/{cred_id}")
+async def update_credential(exchange_id: UUID, cred_id: UUID, cred: dict, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(ExchangeCredential).where(
+            ExchangeCredential.exchange_id == exchange_id,
+            ExchangeCredential.id == cred_id,
+        )
     )
-    cred = result.scalar_one_or_none()
-    if not cred:
+    db_cred = result.scalar_one_or_none()
+    if not db_cred:
         raise HTTPException(status_code=404, detail="Credential not found")
 
-    await db.delete(cred)
-    await db.commit()
-    return {"status": "deleted"}
+    for k, v in cred.items():
+        setattr(db_cred, k, v)
+
+    await session.commit()
+    await session.refresh(db_cred)
+    return db_cred
+
+@router.delete("/exchanges/{exchange_id}/credentials/{cred_id}")
+async def delete_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(ExchangeCredential).where(
+            ExchangeCredential.exchange_id == exchange_id,
+            ExchangeCredential.id == cred_id,
+        )
+    )
+    db_cred = result.scalar_one_or_none()
+    if not db_cred:
+        raise HTTPException(status_code=404, detail="Credential not found")
+
+    await session.delete(db_cred)
+    await session.commit()
+    return {"ok": True}
 
 # ----------------------------------------------------------------
 # Exchange Symbols (read-only)

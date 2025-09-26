@@ -71,7 +71,6 @@ class Exchange(Base):
         back_populates="exchange",
         cascade="all, delete-orphan"
     )
-
 class ExchangeCredential(Base):
     __tablename__ = "exchange_credentials"
 
