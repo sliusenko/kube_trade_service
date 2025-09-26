@@ -11,10 +11,8 @@ from app.models.exchanges import (
 from app.schemas.exchanges import (
     ExchangeCreate, ExchangeUpdate, ExchangeRead,
     ExchangeCredentialCreate, ExchangeCredentialRead,
-    ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead
+    ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead, ExchangeSchema
 )
-from schemas.exchange import ExchangeSchema
-
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 
