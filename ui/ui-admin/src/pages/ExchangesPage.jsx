@@ -89,22 +89,7 @@ export default function ExchangesPage() {
     }
   };
 
-  // CRUD Exchanges
-  const handleCreate = async () => {
-    await createExchange(formData);
-    reloadExchanges();
-  };
-  const handleUpdate = async () => {
-    await updateExchange(selectedExchange, formData);
-    reloadExchanges();
-  };
-  const handleDelete = async () => {
-    await deleteExchange(selectedExchange);
-    reloadExchanges();
-    setSelectedExchange(null);
-  };
-
-  // CRUD
+  // CRUD для Exchanges + Credentials
   const handleCreate = async () => {
     if (activeTab === "EXCHANGES") {
       await createExchange(formData);
@@ -135,7 +120,6 @@ export default function ExchangesPage() {
       await deleteExchangeCredential(selectedExchange, formData.id);
     }
   };
-
 
   return (
     <div className="container mt-4">
