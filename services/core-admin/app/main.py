@@ -11,7 +11,7 @@ app = FastAPI(title="Admin-core API")
 
 @app.on_event("startup")
 async def startup_event():
-    # створюємо таблиці якщо їх нема
+
     async with engine.begin() as conn:
         print(Base.metadata.tables.keys())
         await conn.run_sync(Base.metadata.create_all)
@@ -25,4 +25,4 @@ app.include_router(exchanges.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Admin-core API running"}
+    return {"message": "core-admin API running"}

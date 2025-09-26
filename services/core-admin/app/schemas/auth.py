@@ -5,29 +5,14 @@ from datetime import datetime
 from uuid import UUID
 
 # Users
-class UserSchema(BaseModel):
-    id: Optional[str] = None
-    username: str = Field(..., description="Username of the user")
-    email: EmailStr = Field(..., description="Email address")
-    role: Optional[str] = Field(default=None, description="Role name")
-    is_active: bool = Field(default=True, description="Whether the user is active")
-
-    created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 # 🔹 Базове — спільні поля
 class UserBase(BaseModel):
     username: str
     email: EmailStr
     is_active: bool = True
-
-# 🔹 Для створення
 class UserCreate(UserBase):
     password: str
     role: str = "user"
-
-# 🔹 Для відповіді (читаємо з БД)
 class UserOut(BaseModel):
     user_id: UUID
     username: str
@@ -38,20 +23,12 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True  # у Pydantic v2
-
-# 🔹 Для оновлення
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
     role: str | None = None
     is_active: bool | None = None
 
 # Roles
-class RoleSchema(BaseModel):
-    name: str = Field(..., description="Role name")
-    description: Optional[str] = Field(default=None, description="Role description")
-
-    class Config:
-        from_attributes = True
 class RoleBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -64,12 +41,6 @@ class RoleOut(RoleBase):
         from_attributes = True
 
 # Permissions
-class PermissionSchema(BaseModel):
-    name: str = Field(..., description="Permission name")
-    description: Optional[str] = Field(default=None, description="Permission description")
-
-    class Config:
-        from_attributes = True
 class PermissionBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -82,12 +53,6 @@ class PermissionOut(PermissionBase):
         from_attributes = True
 
 # RolePermission (binding)
-class RolePermissionSchema(BaseModel):
-    role_name: str = Field(..., description="Role name")
-    permission_name: str = Field(..., description="Permission name")
-
-    class Config:
-        from_attributes = True
 class RolePermissionBase(BaseModel):
     role_name: str
     permission_name: str

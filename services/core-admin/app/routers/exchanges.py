@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.future import select
 from app.deps.db import get_session
 from app.models.exchanges import (
     Exchange, ExchangeCredential, ExchangeSymbol, ExchangeLimit, ExchangeStatusHistory
@@ -11,7 +10,7 @@ from app.models.exchanges import (
 from app.schemas.exchanges import (
     ExchangeCreate, ExchangeUpdate, ExchangeRead,
     ExchangeCredentialCreate, ExchangeCredentialRead,
-    ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead, ExchangeSchema
+    ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead
 )
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
@@ -19,10 +18,6 @@ router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 # ----------------------------------------------------------------
 # Exchange CRUD
 # ----------------------------------------------------------------
-@router.get("/schema", response_model=ExchangeSchema)
-async def get_exchange_schema():
-    return ExchangeSchema.model_json_schema()
-
 @router.get("/", response_model=List[ExchangeRead])
 async def list_exchanges(db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Exchange))

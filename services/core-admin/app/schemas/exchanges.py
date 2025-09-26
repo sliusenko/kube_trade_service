@@ -67,40 +67,6 @@ class ExchangeRead(ExchangeBase):
 
     class Config:
         from_attributes = True
-class ExchangeSchema(BaseModel):
-    id: Optional[str] = None
-    code: str
-    name: str
-    kind: str = Field(default="spot", description="Exchange type")
-    environment: str = Field(default="prod", description="Environment")
-
-    base_url_public: Optional[str] = None
-    base_url_private: Optional[str] = None
-    ws_public_url: Optional[str] = None
-    ws_private_url: Optional[str] = None
-    data_feed_url: Optional[str] = None
-
-    fetch_symbols_interval_min: int = 60
-    fetch_filters_interval_min: int = 1440
-    fetch_limits_interval_min: int = 1440
-
-    rate_limit_per_min: Optional[int] = None
-    recv_window_ms: int = 5000
-    request_timeout_ms: int = 10000
-
-    is_active: bool = True
-
-    status: Optional[str] = None
-    status_msg: Optional[str] = None
-
-    features: Dict = {}
-    extra: Dict = {}
-
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 # -----------------------------
 # ExchangeCredential
@@ -137,18 +103,6 @@ class ExchangeCredentialRead(ExchangeCredentialBase):
     id: UUID
     exchange_id: UUID
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-class ExchangeCredentialSchema(BaseModel):
-    id: Optional[int] = None
-    exchange_id: int = Field(..., description="ID of the exchange")
-    api_key: str = Field(..., description="API key for the exchange")
-    api_secret: str = Field(..., description="API secret for the exchange")
-    passphrase: Optional[str] = Field(default=None, description="Passphrase (if required)")
-
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

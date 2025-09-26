@@ -98,8 +98,8 @@ export default function ExchangesPage() {
         api_passphrase: { "ui:widget": "password" },
         subaccount: { "ui:widget": "text" },
         label: { "ui:widget": "text" },
-        is_service: { "ui:widget": "checkbox" },
-        is_active: { "ui:widget": "checkbox" },
+        is_service: { "ui:widget": "checkbox", "ui:options": { inputType: "boolean" } },
+        is_active: { "ui:widget": "checkbox", "ui:options": { inputType: "boolean" } },
       };
     }
     return {};
