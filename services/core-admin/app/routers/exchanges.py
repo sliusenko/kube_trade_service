@@ -19,7 +19,7 @@ router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 # ----------------------------------------------------------------
 # Exchange CRUD
 # ----------------------------------------------------------------
-@router.get("/schema")
+@router.get("/schema", response_model=ExchangeSchema)
 async def get_exchange_schema():
     return ExchangeSchema.model_json_schema()
 
@@ -76,23 +76,23 @@ async def delete_exchange(exchange_id: UUID, db: AsyncSession = Depends(get_sess
 # ----------------------------------------------------------------
 # Exchange Credentials
 # ----------------------------------------------------------------
-@router.get("/exchanges/{exchange_id}/credentials")
+@router.get("/{exchange_id}/credentials", response_model=List[ExchangeCredentialRead],)
 async def list_credentials(exchange_id: UUID, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(ExchangeCredential).where(ExchangeCredential.exchange_id == exchange_id)
     )
     return result.scalars().all()
 
-@router.post("/exchanges/{exchange_id}/credentials")
-async def add_credential(exchange_id: UUID, cred: dict, session: AsyncSession = Depends(get_session)):
-    new_cred = ExchangeCredential(exchange_id=exchange_id, **cred)
+@router.post("/{exchange_id}/credentials", response_model=ExchangeCredentialRead,)
+async def add_credential(exchange_id: UUID, cred: ExchangeCredentialCreate, session: AsyncSession = Depends(get_session),):
+    new_cred = ExchangeCredential(exchange_id=exchange_id, **cred.dict())
     session.add(new_cred)
     await session.commit()
     await session.refresh(new_cred)
     return new_cred
 
-@router.put("/exchanges/{exchange_id}/credentials/{cred_id}")
-async def update_credential(exchange_id: UUID, cred_id: UUID, cred: dict, session: AsyncSession = Depends(get_session)):
+@router.put("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialRead,)
+async def update_credential(exchange_id: UUID, cred_id: UUID, cred: ExchangeCredentialCreate, session: AsyncSession = Depends(get_session),):
     result = await session.execute(
         select(ExchangeCredential).where(
             ExchangeCredential.exchange_id == exchange_id,
@@ -103,14 +103,14 @@ async def update_credential(exchange_id: UUID, cred_id: UUID, cred: dict, sessio
     if not db_cred:
         raise HTTPException(status_code=404, detail="Credential not found")
 
-    for k, v in cred.items():
+    for k, v in cred.dict(exclude_unset=True).items():
         setattr(db_cred, k, v)
 
     await session.commit()
     await session.refresh(db_cred)
     return db_cred
 
-@router.delete("/exchanges/{exchange_id}/credentials/{cred_id}")
+@router.delete("/{exchange_id}/credentials/{cred_id}", response_model=dict,)
 async def delete_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(ExchangeCredential).where(
