@@ -81,13 +81,9 @@ export default function ExchangesPage() {
   const getCurrentSchema = () => {
     switch (activeTab) {
       case "EXCHANGES":
-        return schemas.ExchangeSchema;
+        return schemas.ExchangeCreate;
       case "CREDENTIALS":
-        return (
-          schemas.ExchangeCredentialSchema ||
-          schemas.ExchangeCredentialRead ||
-          schemas.ExchangeCredentialBase
-        );
+        return schemas.ExchangeCredentialCreate;
       default:
         return null;
     }
@@ -107,6 +103,39 @@ export default function ExchangesPage() {
     reloadExchanges();
     setSelectedExchange(null);
   };
+
+  // CRUD
+  const handleCreate = async () => {
+    if (activeTab === "EXCHANGES") {
+      await createExchange(formData);
+      reloadExchanges();
+    }
+    if (activeTab === "CREDENTIALS") {
+      await createExchangeCredential(selectedExchange, formData);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (activeTab === "EXCHANGES") {
+      await updateExchange(selectedExchange, formData);
+      reloadExchanges();
+    }
+    if (activeTab === "CREDENTIALS") {
+      await updateExchangeCredential(selectedExchange, formData.id, formData);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (activeTab === "EXCHANGES") {
+      await deleteExchange(selectedExchange);
+      reloadExchanges();
+      setSelectedExchange(null);
+    }
+    if (activeTab === "CREDENTIALS") {
+      await deleteExchangeCredential(selectedExchange, formData.id);
+    }
+  };
+
 
   return (
     <div className="container mt-4">
