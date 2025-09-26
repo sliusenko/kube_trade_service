@@ -1,64 +1,68 @@
 import apiClient from "./apiClient";
 
-// --------------------
-// Exchanges
-// --------------------
-
 // Отримати всі біржі
 export const getExchanges = async () => {
   const res = await apiClient.get("/exchanges/");
   return res.data;
 };
 
-// Отримати OpenAPI-схему (JSON опис всіх моделей)
-export const getSchema = async () => {
-  const res = await apiClient.get("/openapi.json");
+// CRUD для бірж
+export const createExchange = async (data) => {
+  const res = await apiClient.post("/exchanges/", data);
   return res.data;
 };
 
-// Створити біржу
-export const createExchange = async (payload) => {
-  const res = await apiClient.post("/exchanges/", payload);
+export const updateExchange = async (id, data) => {
+  const res = await apiClient.put(`/exchanges/${id}`, data);
   return res.data;
 };
 
-// Оновити біржу
-export const updateExchange = async (exchangeId, payload) => {
-  const res = await apiClient.put(`/exchanges/${exchangeId}`, payload);
+export const deleteExchange = async (id) => {
+  const res = await apiClient.delete(`/exchanges/${id}`);
   return res.data;
 };
 
-// Видалити біржу
-export const deleteExchange = async (exchangeId) => {
-  const res = await apiClient.delete(`/exchanges/${exchangeId}`);
+// Отримати всі креденшіали для біржі
+export const getExchangeCredentials = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/credentials`);
   return res.data;
 };
 
-// --------------------
+// Створити креденшіал
+export const createExchangeCredential = async (exchangeId, data) => {
+  const res = await apiClient.post(`/exchanges/${exchangeId}/credentials`, data);
+  return res.data;
+};
+
+// Оновити креденшіал
+export const updateExchangeCredential = async (exchangeId, id, data) => {
+  const res = await apiClient.put(`/exchanges/${exchangeId}/credentials/${id}`, data);
+  return res.data;
+};
+
+// Видалити креденшіал
+export const deleteExchangeCredential = async (exchangeId, id) => {
+  const res = await apiClient.delete(`/exchanges/${exchangeId}/credentials/${id}`);
+  return res.data;
+};
+
+// ---------------------------
+// Додаткові API
+// ---------------------------
+
 // Symbols
-// --------------------
-
-// Отримати символи по біржі
 export const getExchangeSymbols = async (exchangeId) => {
   const res = await apiClient.get(`/exchanges/${exchangeId}/symbols`);
   return res.data;
 };
 
-// --------------------
 // Limits
-// --------------------
-
-// Отримати ліміти по біржі
 export const getExchangeLimits = async (exchangeId) => {
   const res = await apiClient.get(`/exchanges/${exchangeId}/limits`);
   return res.data;
 };
 
-// --------------------
-// Status History
-// --------------------
-
-// Отримати історію статусу біржі
+// History
 export const getExchangeHistory = async (exchangeId) => {
   const res = await apiClient.get(`/exchanges/${exchangeId}/history`);
   return res.data;
