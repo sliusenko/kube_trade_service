@@ -42,7 +42,7 @@ const TabButton = ({ label, active, onClick }) => (
 export default function ExchangesPage() {
   const [activeTab, setActiveTab] = useState("EXCHANGES");
   const [exchanges, setExchanges] = useState([]);
-  const [selectedExchange, setSelectedExchange] = useState(null);
+  const [selectedExchange, setSelectedExchange] = useState(""); // тільки id
   const [schemas, setSchemas] = useState({});
   const [formData, setFormData] = useState({});
   const [symbols, setSymbols] = useState([]);
@@ -63,16 +63,16 @@ export default function ExchangesPage() {
     if (!selectedExchange) return;
 
     if (activeTab === "SYMBOLS") {
-      getExchangeSymbols(selectedExchange.id).then(setSymbols);
+      getExchangeSymbols(selectedExchange).then(setSymbols);
     }
     if (activeTab === "LIMITS") {
-      getExchangeLimits(selectedExchange.id).then(setLimits);
+      getExchangeLimits(selectedExchange).then(setLimits);
     }
     if (activeTab === "HISTORY") {
-      getExchangeHistory(selectedExchange.id).then(setHistory);
+      getExchangeHistory(selectedExchange).then(setHistory);
     }
     if (activeTab === "CREDENTIALS") {
-      getExchangeCredentials(selectedExchange.id).then(setCredentials);
+      getExchangeCredentials(selectedExchange).then(setCredentials);
     }
   }, [activeTab, selectedExchange]);
 
@@ -91,6 +91,22 @@ export default function ExchangesPage() {
     }
   };
 
+  // UI Schema для правильного відображення форм
+  const getUiSchema = () => {
+    if (activeTab === "CREDENTIALS") {
+      return {
+        api_key: { "ui:widget": "password" },
+        api_secret: { "ui:widget": "password" },
+        api_passphrase: { "ui:widget": "password" },
+        subaccount: { "ui:widget": "text" },
+        label: { "ui:widget": "text" },
+        is_service: { "ui:widget": "checkbox" },
+        is_active: { "ui:widget": "checkbox" },
+      };
+    }
+    return {};
+  };
+
   // -----------------------------
   // CRUD для Exchanges + Credentials
   // -----------------------------
@@ -102,33 +118,33 @@ export default function ExchangesPage() {
       setFormData({});
     }
     if (activeTab === "CREDENTIALS" && selectedExchange) {
-      await createExchangeCredential(selectedExchange.id, formData);
-      getExchangeCredentials(selectedExchange.id).then(setCredentials);
+      await createExchangeCredential(selectedExchange, formData);
+      getExchangeCredentials(selectedExchange).then(setCredentials);
       setFormData({});
     }
   };
 
   const handleUpdate = async () => {
     if (activeTab === "EXCHANGES" && selectedExchange) {
-      await updateExchange(selectedExchange.id, formData);
+      await updateExchange(selectedExchange, formData);
       reloadExchanges();
     }
-    if (activeTab === "CREDENTIALS" && selectedExchange) {
-      await updateExchangeCredential(selectedExchange.id, formData.id, formData);
-      getExchangeCredentials(selectedExchange.id).then(setCredentials);
+    if (activeTab === "CREDENTIALS" && selectedExchange && formData.id) {
+      await updateExchangeCredential(selectedExchange, formData.id, formData);
+      getExchangeCredentials(selectedExchange).then(setCredentials);
     }
   };
 
   const handleDelete = async () => {
     if (activeTab === "EXCHANGES" && selectedExchange) {
-      await deleteExchange(selectedExchange.id);
+      await deleteExchange(selectedExchange);
       reloadExchanges();
-      setSelectedExchange(null);
+      setSelectedExchange("");
       setFormData({});
     }
-    if (activeTab === "CREDENTIALS" && selectedExchange) {
-      await deleteExchangeCredential(selectedExchange.id, formData.id);
-      getExchangeCredentials(selectedExchange.id).then(setCredentials);
+    if (activeTab === "CREDENTIALS" && selectedExchange && formData.id) {
+      await deleteExchangeCredential(selectedExchange, formData.id);
+      getExchangeCredentials(selectedExchange).then(setCredentials);
       setFormData({});
     }
   };
@@ -142,27 +158,42 @@ export default function ExchangesPage() {
         <TabButton
           label="EXCHANGES"
           active={activeTab === "EXCHANGES"}
-          onClick={() => setActiveTab("EXCHANGES")}
+          onClick={() => {
+            setActiveTab("EXCHANGES");
+            setFormData({});
+          }}
         />
         <TabButton
           label="CREDENTIALS"
           active={activeTab === "CREDENTIALS"}
-          onClick={() => setActiveTab("CREDENTIALS")}
+          onClick={() => {
+            setActiveTab("CREDENTIALS");
+            setFormData({});
+          }}
         />
         <TabButton
           label="SYMBOLS"
           active={activeTab === "SYMBOLS"}
-          onClick={() => setActiveTab("SYMBOLS")}
+          onClick={() => {
+            setActiveTab("SYMBOLS");
+            setFormData({});
+          }}
         />
         <TabButton
           label="LIMITS"
           active={activeTab === "LIMITS"}
-          onClick={() => setActiveTab("LIMITS")}
+          onClick={() => {
+            setActiveTab("LIMITS");
+            setFormData({});
+          }}
         />
         <TabButton
           label="HISTORY"
           active={activeTab === "HISTORY"}
-          onClick={() => setActiveTab("HISTORY")}
+          onClick={() => {
+            setActiveTab("HISTORY");
+            setFormData({});
+          }}
         />
       </div>
 
@@ -171,11 +202,10 @@ export default function ExchangesPage() {
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <select
             className="form-select"
-            value={selectedExchange?.id || ""}
+            value={selectedExchange}
             onChange={(e) => {
-              const ex = exchanges.find((x) => x.id === e.target.value);
-              setSelectedExchange(ex || null);
-              setFormData(ex || {});
+              setSelectedExchange(e.target.value);
+              setFormData({});
             }}
             style={{ maxWidth: "250px" }}
           >
@@ -220,6 +250,7 @@ export default function ExchangesPage() {
       {getCurrentSchema() && (
         <Form
           schema={getCurrentSchema()}
+          uiSchema={getUiSchema()}
           validator={validator}
           formData={formData}
           onChange={(e) => setFormData(e.formData)}
