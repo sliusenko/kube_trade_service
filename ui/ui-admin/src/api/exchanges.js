@@ -10,6 +10,12 @@ export const getExchanges = async () => {
   return res.data;
 };
 
+// Отримати OpenAPI-схему (JSON опис всіх моделей)
+export const getSchema = async () => {
+  const res = await apiClient.get("/openapi.json");
+  return res.data;
+};
+
 // Створити біржу
 export const createExchange = async (payload) => {
   const res = await apiClient.post("/exchanges/", payload);
