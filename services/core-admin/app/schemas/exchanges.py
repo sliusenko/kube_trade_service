@@ -1,8 +1,7 @@
-from typing import Optional, List
-from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
-
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, List
 
 # -----------------------------
 # Exchange
@@ -21,10 +20,8 @@ class ExchangeBase(BaseModel):
     fetch_filters_interval_min: Optional[int] = 1440
     fetch_limits_interval_min: Optional[int] = 1440
     is_active: Optional[bool] = True
-
 class ExchangeCreate(ExchangeBase):
     pass
-
 class ExchangeUpdate(BaseModel):
     name: Optional[str]
     kind: Optional[str]
@@ -38,7 +35,6 @@ class ExchangeUpdate(BaseModel):
     fetch_filters_interval_min: Optional[int]
     fetch_limits_interval_min: Optional[int]
     is_active: Optional[bool]
-
 class ExchangeRead(ExchangeBase):
     id: UUID
     created_at: datetime
@@ -46,7 +42,40 @@ class ExchangeRead(ExchangeBase):
 
     class Config:
         from_attributes = True
+class ExchangeSchema(BaseModel):
+    id: Optional[str] = None
+    code: str
+    name: str
+    kind: str = Field(default="spot", description="Exchange type")
+    environment: str = Field(default="prod", description="Environment")
 
+    base_url_public: Optional[str] = None
+    base_url_private: Optional[str] = None
+    ws_public_url: Optional[str] = None
+    ws_private_url: Optional[str] = None
+    data_feed_url: Optional[str] = None
+
+    fetch_symbols_interval_min: int = 60
+    fetch_filters_interval_min: int = 1440
+    fetch_limits_interval_min: int = 1440
+
+    rate_limit_per_min: Optional[int] = None
+    recv_window_ms: int = 5000
+    request_timeout_ms: int = 10000
+
+    is_active: bool = True
+
+    status: Optional[str] = None
+    status_msg: Optional[str] = None
+
+    features: Dict = {}
+    extra: Dict = {}
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 # -----------------------------
 # ExchangeCredential
@@ -59,10 +88,8 @@ class ExchangeCredentialBase(BaseModel):
     api_secret: Optional[str] = None
     api_passphrase: Optional[str] = None
     subaccount: Optional[str] = None
-
 class ExchangeCredentialCreate(ExchangeCredentialBase):
     pass
-
 class ExchangeCredentialRead(ExchangeCredentialBase):
     id: UUID
     exchange_id: UUID
@@ -70,7 +97,6 @@ class ExchangeCredentialRead(ExchangeCredentialBase):
 
     class Config:
         from_attributes = True
-
 
 # -----------------------------
 # ExchangeSymbol (read-only)
@@ -96,7 +122,6 @@ class ExchangeSymbolRead(BaseModel):
     class Config:
         from_attributes = True
 
-
 # -----------------------------
 # ExchangeLimit (read-only)
 # -----------------------------
@@ -112,7 +137,6 @@ class ExchangeLimitRead(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 # -----------------------------
 # ExchangeStatusHistory (read-only)

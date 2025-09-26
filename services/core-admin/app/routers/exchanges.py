@@ -13,12 +13,18 @@ from app.schemas.exchanges import (
     ExchangeCredentialCreate, ExchangeCredentialRead,
     ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead
 )
+from schemas.exchange import ExchangeSchema
+
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 
 # ----------------------------------------------------------------
 # Exchange CRUD
 # ----------------------------------------------------------------
+@router.get("/schema")
+async def get_exchange_schema():
+    return ExchangeSchema.model_json_schema()
+
 @router.get("/", response_model=List[ExchangeRead])
 async def list_exchanges(db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Exchange))
