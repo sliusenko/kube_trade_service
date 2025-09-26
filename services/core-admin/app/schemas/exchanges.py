@@ -140,6 +140,18 @@ class ExchangeCredentialRead(ExchangeCredentialBase):
 
     class Config:
         from_attributes = True
+class ExchangeCredentialSchema(BaseModel):
+    id: Optional[int] = None
+    exchange_id: int = Field(..., description="ID of the exchange")
+    api_key: str = Field(..., description="API key for the exchange")
+    api_secret: str = Field(..., description="API secret for the exchange")
+    passphrase: Optional[str] = Field(default=None, description="Passphrase (if required)")
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 # -----------------------------
 # ExchangeSymbol (read-only)
