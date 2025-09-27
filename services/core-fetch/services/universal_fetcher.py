@@ -3,7 +3,7 @@ import requests
 from decimal import Decimal
 from sqlalchemy import delete, update
 from sqlalchemy.sql import func
-from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory,
+from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory
 from core_fetch.db.session import SessionLocal
 
 async def refresh_symbols(client, exchange_id):
