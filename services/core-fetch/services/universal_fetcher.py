@@ -31,19 +31,31 @@ async def refresh_symbols(client, exchange_id):
 
                 filters = {f["filterType"]: f for f in s.get("filters", [])}
 
+                # ---- min_notional / max_notional ----
+                min_notional = None
+                max_notional = None
+
+                if "MIN_NOTIONAL" in filters:
+                    min_notional = filters["MIN_NOTIONAL"].get("minNotional")
+                elif "NOTIONAL" in filters:
+                    min_notional = filters["NOTIONAL"].get("minNotional")
+                    max_notional = filters["NOTIONAL"].get("maxNotional")
+
                 symbols.append(dict(
                     exchange_id=exchange_id,
                     symbol=s["symbol"],
                     base_asset=s["baseAsset"],
                     quote_asset=s["quoteAsset"],
                     status=s["status"],
+                    type="spot",
                     base_precision=s.get("baseAssetPrecision"),
                     quote_precision=s.get("quotePrecision"),
                     step_size=filters.get("LOT_SIZE", {}).get("stepSize"),
                     tick_size=filters.get("PRICE_FILTER", {}).get("tickSize"),
                     min_qty=filters.get("LOT_SIZE", {}).get("minQty"),
                     max_qty=filters.get("LOT_SIZE", {}).get("maxQty"),
-                    min_notional=filters.get("MIN_NOTIONAL", {}).get("minNotional"),
+                    min_notional=min_notional,
+                    max_notional=max_notional,
                     filters=s.get("filters", []),
                 ))
 
@@ -60,19 +72,29 @@ async def refresh_symbols(client, exchange_id):
             for key, s in data.get("result", {}).items():
                 base = s.get("base")
                 quote = s.get("quote")
+
+                # розрахунок кроків для кількості та ціни
+                lot_decimals = int(s.get("lot_decimals", 0))
+                step_size = Decimal(f"1e-{lot_decimals}") if lot_decimals else None
+                min_qty = Decimal(s.get("ordermin")) if s.get("ordermin") else None
+                pair_decimals = int(s.get("pair_decimals", lot_decimals))
+                tick_size = Decimal(f"1e-{pair_decimals}") if pair_decimals else None
+
                 symbols.append(dict(
                     exchange_id=exchange_id,
                     symbol=key,
                     base_asset=base,
                     quote_asset=quote,
                     status="TRADING",
+                    type="spot",
                     base_precision=s.get("pair_decimals"),
                     quote_precision=s.get("lot_decimals"),
-                    step_size=None,
-                    tick_size=None,
-                    min_qty=None,
+                    step_size=str(step_size) if step_size else None,
+                    tick_size=str(tick_size) if tick_size else None,
+                    min_qty=str(min_qty) if min_qty else None,
                     max_qty=None,
                     min_notional=None,
+                    max_notional=None,
                     filters=s,
                 ))
 
@@ -93,11 +115,14 @@ async def refresh_symbols(client, exchange_id):
             if symbols:
                 session.add_all([ExchangeSymbol(**sym) for sym in symbols])
 
-            # оновлюємо last_symbols_refresh_at
+            # оновлюємо last_symbols_refresh_at + last_filters_refresh_at
             await session.execute(
                 update(Exchange)
                 .where(Exchange.id == exchange_id)
-                .values(last_symbols_refresh_at=func.now())
+                .values(
+                    last_symbols_refresh_at=func.now(),
+                    last_filters_refresh_at=func.now()
+                )
             )
 
             # додаємо запис в ExchangeStatusHistory
@@ -124,188 +149,80 @@ async def refresh_symbols(client, exchange_id):
             await session.commit()
 
 # ---------------------------
-# refresh_filters
-# ---------------------------
-async def refresh_filters(client, exchange_id):
-    logging.info(f"🔄 [START] refresh_filters for {client['exchange_code']}")
-
-    try:
-        filters_data = []
-
-        if client["exchange_code"].lower() == "binance":
-            # створюємо Binance API клієнт на льоту
-            api = BinanceClient(
-                api_key=client.get("key"),
-                api_secret=client.get("secret")
-            )
-            info = api.get_exchange_info()
-
-            for s in info["symbols"]:
-                lot_filter = next((f for f in s["filters"] if f["filterType"] == "LOT_SIZE"), None)
-                price_filter = next((f for f in s["filters"] if f["filterType"] == "PRICE_FILTER"), None)
-
-                if lot_filter:
-                    filters_data.append({
-                        "exchange_id": exchange_id,
-                        "limit_type": "LOT_SIZE",
-                        "interval_unit": "symbol",
-                        "interval_num": 1,
-                        "limit": float(lot_filter["minQty"]),
-                        "raw_json": {
-                            "min_qty": lot_filter["minQty"],
-                            "max_qty": lot_filter["maxQty"],
-                            "step_size": lot_filter["stepSize"],
-                            "tick_size": float(price_filter["tickSize"]) if price_filter else None
-                        },
-                        "fetched_at": func.now()
-                    })
-
-        elif client["exchange_code"].lower() == "kraken":
-            # Kraken AssetPairs
-            res = requests.get("https://api.kraken.com/0/public/AssetPairs")
-            res.raise_for_status()
-            data = res.json()["result"]
-
-            for _, item in data.items():
-                altname = item.get("altname")
-                if not altname:
-                    continue
-
-                lot_decimals = int(item["lot_decimals"])
-                step_size = Decimal(f"1e-{lot_decimals}")
-                min_qty = Decimal(item["ordermin"])
-                pair_decimals = int(item.get("pair_decimals", lot_decimals))
-                tick_size = Decimal(f"1e-{pair_decimals}")
-
-                filters_data.append({
-                    "exchange_id": exchange_id,
-                    "limit_type": "LOT_SIZE",
-                    "interval_unit": "symbol",
-                    "interval_num": 1,
-                    "limit": float(min_qty),
-                    "raw_json": {
-                        "min_qty": str(min_qty),
-                        "step_size": str(step_size),
-                        "tick_size": str(tick_size)
-                    },
-                    "fetched_at": func.now()
-                })
-
-        # --- DB update ---
-        async with SessionLocal() as session:
-            await session.execute(
-                delete(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
-            )
-            if filters_data:
-                session.add_all([ExchangeLimit(**f) for f in filters_data])
-
-            await session.execute(
-                update(Exchange)
-                .where(Exchange.id == exchange_id)
-                .values(last_filters_refresh_at=func.now())
-            )
-
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="filters_refresh",
-                status="ok",
-                message=f"{len(filters_data)} filters збережено"
-            ))
-
-            await session.commit()
-
-        logging.info(f"✅ [DONE] filters для {client['exchange_code']} оновлено")
-
-    except Exception as e:
-        logging.exception(f"❌ refresh_filters error for {client['exchange_code']}: {e}")
-        async with SessionLocal() as session:
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="filters_refresh",
-                status="error",
-                message=str(e)
-            ))
-            await session.commit()
-
-# ---------------------------
 # refresh_limits
 # ---------------------------
 async def refresh_limits(client, exchange_id):
     logging.info(f"🔄 [START] refresh_limits for {client['exchange_code']}")
 
     try:
-        limits_data = []
+        limits = []
 
-        if client["exchange_code"].lower() == "binance":
-            # створюємо Binance API клієнт на льоту
-            api = BinanceClient(
-                api_key=client.get("key"),
-                api_secret=client.get("secret")
-            )
-            info = api.get_exchange_info()
+        # ---- Binance ----
+        if client["exchange_code"].upper() == "BINANCE":
+            url = "/api/v3/exchangeInfo"
+            logging.debug(f"📡 Запит до {client['exchange_code']} {url}")
+            resp = await client["http"].get(url)
+            logging.debug(f"📥 Відповідь {client['exchange_code']} статус={resp.status_code}")
+            data = resp.json()
 
-            for s in info["symbols"]:
-                min_notional = next(
-                    (f for f in s["filters"] if f["filterType"] == "MIN_NOTIONAL"), None
-                )
-                if min_notional:
-                    limits_data.append({
-                        "exchange_id": exchange_id,
-                        "limit_type": "MIN_NOTIONAL",
-                        "interval_unit": "symbol",
-                        "interval_num": 1,
-                        "limit": float(min_notional["minNotional"]),
-                        "raw_json": min_notional,
-                        "fetched_at": func.now()
-                    })
+            for rl in data.get("rateLimits", []):
+                limits.append(dict(
+                    exchange_id=exchange_id,
+                    limit_type=rl["rateLimitType"],     # REQUEST_WEIGHT, ORDERS
+                    interval_unit=rl["interval"],       # SECOND, MINUTE, DAY
+                    interval_num=rl["intervalNum"],     # 1, 60, 86400
+                    limit=rl["limit"],
+                    raw_json=rl,
+                ))
 
-        elif client["exchange_code"].lower() == "kraken":
-            # Kraken AssetPairs → беремо costmin
-            res = requests.get("https://api.kraken.com/0/public/AssetPairs")
-            res.raise_for_status()
-            data = res.json()["result"]
+        # ---- Kraken ----
+        elif client["exchange_code"].upper() == "KRAKEN":
+            # Kraken має просту систему лімітів: https://support.kraken.com/hc/en-us/articles/360022635592
+            # Їх треба хардкодити або фетчити з довідки, бо через API не віддає
+            limits.append(dict(
+                exchange_id=exchange_id,
+                limit_type="REQUEST_WEIGHT",
+                interval_unit="SECOND",
+                interval_num=1,
+                limit=15,   # приклад: 15 запитів на 3 секунди (можна нормалізувати)
+                raw_json={"docs": "https://support.kraken.com/hc/en-us/articles/360022635592"}
+            ))
 
-            for _, item in data.items():
-                altname = item.get("altname")
-                if not altname:
-                    continue
+        else:
+            logging.warning(f"❌ refresh_limits не реалізовано для {client['exchange_code']}")
+            return
 
-                costmin = item.get("costmin")
-                if costmin:
-                    limits_data.append({
-                        "exchange_id": exchange_id,
-                        "limit_type": "MIN_NOTIONAL",
-                        "interval_unit": "symbol",
-                        "interval_num": 1,
-                        "limit": float(costmin),
-                        "raw_json": item,
-                        "fetched_at": func.now()
-                    })
+        logging.info(f"📝 Підготовлено {len(limits)} limits для {client['exchange_code']} (exchange_id={exchange_id})")
 
-        # --- DB update ---
+        # ---- Запис у базу ----
         async with SessionLocal() as session:
+            logging.debug(f"🗑️ Видаляю старі limits для exchange_id={exchange_id}")
             await session.execute(
                 delete(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
             )
-            if limits_data:
-                session.add_all([ExchangeLimit(**l) for l in limits_data])
 
+            logging.debug(f"➕ Додаю {len(limits)} нових limits у exchange_limits")
+            if limits:
+                session.add_all([ExchangeLimit(**lim) for lim in limits])
+
+            # оновлюємо last_limits_refresh_at
             await session.execute(
                 update(Exchange)
                 .where(Exchange.id == exchange_id)
                 .values(last_limits_refresh_at=func.now())
             )
 
+            # додаємо запис в ExchangeStatusHistory
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
                 event="limits_refresh",
                 status="ok",
-                message=f"{len(limits_data)} limits збережено"
+                message=f"{len(limits)} limits збережено"
             ))
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] limits для {client['exchange_code']} оновлено")
+        logging.info(f"✅ [DONE] {len(limits)} limits збережено для {client['exchange_code']}")
 
     except Exception as e:
         logging.exception(f"❌ refresh_limits error for {client['exchange_code']}: {e}")

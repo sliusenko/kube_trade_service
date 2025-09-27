@@ -42,21 +42,6 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     f"(кожні {ex.fetch_symbols_interval_min} хв)"
                 )
 
-            # ---- filters ----
-            if hasattr(module, "refresh_filters"):
-                scheduler.add_job(
-                    module.refresh_filters,
-                    "interval",
-                    minutes=ex.fetch_filters_interval_min,
-                    args=[client, ex.id],
-                    id=f"filters_{ex.code}_{ex.id}",
-                    replace_existing=True,
-                )
-                logging.info(
-                    f"🕑 Додав job filters для {ex.code} "
-                    f"(кожні {ex.fetch_filters_interval_min} хв)"
-                )
-
             # ---- limits ----
             if hasattr(module, "refresh_limits"):
                 scheduler.add_job(

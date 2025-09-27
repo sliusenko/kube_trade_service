@@ -78,7 +78,6 @@ class ExchangeSymbol(Base):
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     exchange = relationship("Exchange", back_populates="symbols")
-
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
     id = Column(BIGINT, primary_key=True, autoincrement=True)
