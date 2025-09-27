@@ -5,10 +5,12 @@ import validator from "@rjsf/validator-ajv8";
 import { ExchangeFormSchema, ExchangeCredentialFormSchema } from "../forms/schemas";
 import {
   getExchanges,
+  getExchange,              // 👈 detail API
   createExchange,
   updateExchange,
   deleteExchange,
   getExchangeCredentials,
+  getExchangeCredential,    // 👈 detail API
   createExchangeCredential,
   updateExchangeCredential,
   deleteExchangeCredential,
@@ -143,6 +145,20 @@ export default function ExchangesPage() {
     }
   };
 
+  // -----------------------------
+  // Handlers для кліків по таблиці
+  // -----------------------------
+  const handleExchangeClick = async (id) => {
+    setSelectedExchange(id);
+    const full = await getExchange(id);
+    setFormData(full);
+  };
+
+  const handleCredentialClick = async (id) => {
+    const full = await getExchangeCredential(selectedExchange, id);
+    setFormData(full);
+  };
+
   return (
     <div className="container mt-4">
       <h2>Exchanges</h2>
@@ -170,7 +186,7 @@ export default function ExchangesPage() {
             value={selectedExchange}
             onChange={(e) => {
               setSelectedExchange(e.target.value);
-              const found = exchanges.find((ex) => ex.id === parseInt(e.target.value));
+              const found = exchanges.find((ex) => ex.id === e.target.value);
               setFormData(found || {});
             }}
             style={{ maxWidth: "250px" }}
@@ -236,7 +252,6 @@ export default function ExchangesPage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
                 <TableCell>Code</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Kind</TableCell>
@@ -249,14 +264,9 @@ export default function ExchangesPage() {
               {exchanges.map((ex) => (
                 <TableRow
                   key={ex.id}
-                  onClick={() => {
-                    setSelectedExchange(ex.id);
-                    const full = await getExchange(ex.id);
-                    setFormData(full);
-                  }}
+                  onClick={() => handleExchangeClick(ex.id)}
                   style={{ cursor: "pointer" }}
                 >
-                  <TableCell>{ex.id}</TableCell>
                   <TableCell>{ex.code}</TableCell>
                   <TableCell>{ex.name}</TableCell>
                   <TableCell>{ex.kind}</TableCell>
@@ -276,10 +286,9 @@ export default function ExchangesPage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
                 <TableCell>Label</TableCell>
-                <TableCell>Valid from</TableCell>
-                <TableCell>Valid to</TableCell>
+                <TableCell>Valid From</TableCell>
+                <TableCell>Valid To</TableCell>
                 <TableCell>Active</TableCell>
                 <TableCell>Created At</TableCell>
               </TableRow>
@@ -288,16 +297,12 @@ export default function ExchangesPage() {
               {credentials.map((c) => (
                 <TableRow
                   key={c.id}
-                  onClick={async () => {
-                    const full = await getExchangeCredential(selectedExchange, c.id);
-                    setFormData(full);
-                  }}
+                  onClick={() => handleCredentialClick(c.id)}
                   style={{ cursor: "pointer" }}
                 >
-                  <TableCell>{c.id}</TableCell>
                   <TableCell>{c.label}</TableCell>
-                  <TableCell>{c.valid_from}</TableCell>
-                  <TableCell>{c.valid_to}</TableCell>
+                  <TableCell>{c.valid_from || "-"}</TableCell>
+                  <TableCell>{c.valid_to || "-"}</TableCell>
                   <TableCell>{c.is_active ? "Yes" : "No"}</TableCell>
                   <TableCell>{c.created_at}</TableCell>
                 </TableRow>
