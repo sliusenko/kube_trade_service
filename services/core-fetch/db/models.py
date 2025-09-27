@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Numeric, TIMESTAMP
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Numeric, TIMESTAMP, SmallInteger
 from sqlalchemy.dialects.postgresql import UUID, JSONB, BIGINT
 from sqlalchemy.sql import text
 from sqlalchemy.orm import declarative_base, relationship
@@ -11,7 +11,9 @@ class Exchange(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     code = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
-    refresh_interval = Column(Integer, server_default="3600")  # сек
+    fetch_symbols_interval_min = Column(SmallInteger, nullable=False, server_default=text("60"))
+    fetch_filters_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
+    fetch_limits_interval_min  = Column(SmallInteger, nullable=False, server_default=text("1440"))
     credentials = relationship("ExchangeCredential", back_populates="exchange", cascade="all, delete-orphan")
     symbols = relationship("ExchangeSymbol", back_populates="exchange", cascade="all, delete-orphan")
     limits = relationship("ExchangeLimit", back_populates="exchange", cascade="all, delete-orphan")
@@ -68,9 +70,11 @@ class ExchangeLimit(Base):
     exchange = relationship("Exchange", back_populates="limits")
 class ExchangeStatusHistory(Base):
     __tablename__ = "exchange_status_history"
+
     id = Column(BIGINT, primary_key=True, autoincrement=True)
     exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
     event = Column(Text, nullable=False)
     status = Column(Text, nullable=False)
     message = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    exchange = relationship("Exchange", back_populates="status_history")
