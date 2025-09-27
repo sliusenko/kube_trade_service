@@ -162,7 +162,7 @@ export default function ExchangesPage() {
         ))}
       </div>
 
-      {/* Dropdown + CRUD тільки для EXCHANGES/CREDENTIALS */}
+      {/* Dropdown для вибору біржі */}
       {(activeTab === "EXCHANGES" || activeTab === "CREDENTIALS") && (
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <select
@@ -182,32 +182,10 @@ export default function ExchangesPage() {
               </option>
             ))}
           </select>
-
-          <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreate}>
-            Create
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            startIcon={<Edit />}
-            disabled={!selectedExchange}
-            onClick={handleUpdate}
-          >
-            Update
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<Delete />}
-            disabled={!selectedExchange}
-            onClick={handleDelete}
-          >
-            Delete
-          </Button>
         </div>
       )}
 
-      {/* Форма */}
+      {/* Форма + кнопки CRUD */}
       {getCurrentSchema() ? (
         <Form
           schema={getCurrentSchema()}
@@ -215,7 +193,37 @@ export default function ExchangesPage() {
           validator={validator}
           formData={formData}
           onChange={(e) => setFormData(e.formData)}
-        />
+          noHtml5Validate
+        >
+          <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={handleCreate}
+            >
+              Create
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<Edit />}
+              disabled={!selectedExchange}
+              onClick={handleUpdate}
+            >
+              Update
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<Delete />}
+              disabled={!selectedExchange}
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </div>
+        </Form>
       ) : (
         (activeTab === "EXCHANGES" || activeTab === "CREDENTIALS") && (
           <p style={{ color: "red", marginTop: "10px" }}>❌ Schema for {activeTab} not found</p>
@@ -233,6 +241,7 @@ export default function ExchangesPage() {
                 <TableCell>Name</TableCell>
                 <TableCell>Kind</TableCell>
                 <TableCell>Environment</TableCell>
+                <TableCell>Rate Limit</TableCell>
                 <TableCell>Active</TableCell>
               </TableRow>
             </TableHead>
@@ -251,6 +260,7 @@ export default function ExchangesPage() {
                   <TableCell>{ex.name}</TableCell>
                   <TableCell>{ex.kind}</TableCell>
                   <TableCell>{ex.environment}</TableCell>
+                  <TableCell>{ex.rate_limit_per_min || "-"}</TableCell>
                   <TableCell>{ex.is_active ? "Yes" : "No"}</TableCell>
                 </TableRow>
               ))}
@@ -267,7 +277,8 @@ export default function ExchangesPage() {
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>Label</TableCell>
-                <TableCell>API Key</TableCell>
+                <TableCell>Valid from</TableCell>
+                <TableCell>Valid to</TableCell>
                 <TableCell>Active</TableCell>
                 <TableCell>Created At</TableCell>
               </TableRow>
@@ -281,7 +292,8 @@ export default function ExchangesPage() {
                 >
                   <TableCell>{c.id}</TableCell>
                   <TableCell>{c.label}</TableCell>
-                  <TableCell>{c.api_key}</TableCell>
+                  <TableCell>{c.valid_from}</TableCell>
+                  <TableCell>{c.valid_to}</TableCell>
                   <TableCell>{c.is_active ? "Yes" : "No"}</TableCell>
                   <TableCell>{c.created_at}</TableCell>
                 </TableRow>
