@@ -106,9 +106,10 @@ export default function ExchangesPage() {
   // -----------------------------
   const handleCreate = async () => {
     if (activeTab === "EXCHANGES") {
-      await createExchange(formData);
+      const newEx = await createExchange(formData);
       reloadExchanges();
-      setFormData({});
+      setSelectedExchange(newEx.id);
+      setFormData(newEx);
     }
     if (activeTab === "CREDENTIALS" && selectedExchange) {
       await createExchangeCredential(selectedExchange, formData);
@@ -169,7 +170,8 @@ export default function ExchangesPage() {
             value={selectedExchange}
             onChange={(e) => {
               setSelectedExchange(e.target.value);
-              setFormData({});
+              const found = exchanges.find((ex) => ex.id === parseInt(e.target.value));
+              setFormData(found || {});
             }}
             style={{ maxWidth: "250px" }}
           >
@@ -218,6 +220,43 @@ export default function ExchangesPage() {
         (activeTab === "EXCHANGES" || activeTab === "CREDENTIALS") && (
           <p style={{ color: "red", marginTop: "10px" }}>❌ Schema for {activeTab} not found</p>
         )
+      )}
+
+      {/* EXCHANGES таблиця */}
+      {activeTab === "EXCHANGES" && (
+        <Paper style={{ marginTop: "20px" }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Code</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Kind</TableCell>
+                <TableCell>Environment</TableCell>
+                <TableCell>Active</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {exchanges.map((ex) => (
+                <TableRow
+                  key={ex.id}
+                  onClick={() => {
+                    setSelectedExchange(ex.id);
+                    setFormData(ex);
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
+                  <TableCell>{ex.id}</TableCell>
+                  <TableCell>{ex.code}</TableCell>
+                  <TableCell>{ex.name}</TableCell>
+                  <TableCell>{ex.kind}</TableCell>
+                  <TableCell>{ex.environment}</TableCell>
+                  <TableCell>{ex.is_active ? "Yes" : "No"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
       )}
 
       {/* CREDENTIALS таблиця */}
