@@ -25,6 +25,10 @@ class Exchange(Base):
     symbols = relationship("ExchangeSymbol", back_populates="exchange", cascade="all, delete-orphan")
     limits = relationship("ExchangeLimit", back_populates="exchange", cascade="all, delete-orphan")
     status_history = relationship("ExchangeStatusHistory", back_populates="exchange", cascade="all, delete-orphan")
+    last_symbols_refresh_at = Column(TIMESTAMP(timezone=True))
+    last_filters_refresh_at = Column(TIMESTAMP(timezone=True))
+    last_limits_refresh_at = Column(TIMESTAMP(timezone=True))
+
 class ExchangeCredential(Base):
     __tablename__ = "exchange_credentials"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

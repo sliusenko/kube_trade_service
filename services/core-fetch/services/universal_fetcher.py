@@ -1,10 +1,12 @@
 import logging
 import requests
 from decimal import Decimal
-from sqlalchemy import delete, update
+from sqlalchemy import delete, update, func
 from sqlalchemy.sql import func
 from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory
 from core_fetch.db.session import SessionLocal
+from binance.client import Client as BinanceClient
+
 
 async def refresh_symbols(client, exchange_id):
     logging.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
@@ -107,10 +109,14 @@ async def refresh_filters(client, exchange_id):
         filters_data = []
 
         if client["exchange_code"].lower() == "binance":
-            # Binance exchangeInfo
-            info = client["api"].get_exchange_info()
-            for s in info["symbols"]:
+            # створюємо Binance API клієнт на льоту
+            api = BinanceClient(
+                api_key=client.get("key"),
+                api_secret=client.get("secret")
+            )
+            info = api.get_exchange_info()
 
+            for s in info["symbols"]:
                 lot_filter = next((f for f in s["filters"] if f["filterType"] == "LOT_SIZE"), None)
                 price_filter = next((f for f in s["filters"] if f["filterType"] == "PRICE_FILTER"), None)
 
@@ -163,7 +169,9 @@ async def refresh_filters(client, exchange_id):
 
         # --- DB update ---
         async with SessionLocal() as session:
-            await session.execute(delete(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id))
+            await session.execute(
+                delete(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
+            )
             if filters_data:
                 session.add_all([ExchangeLimit(**f) for f in filters_data])
 
