@@ -251,7 +251,8 @@ export default function ExchangesPage() {
                   key={ex.id}
                   onClick={() => {
                     setSelectedExchange(ex.id);
-                    setFormData(ex);
+                    const full = await getExchange(ex.id);
+                    setFormData(full);
                   }}
                   style={{ cursor: "pointer" }}
                 >
@@ -287,7 +288,10 @@ export default function ExchangesPage() {
               {credentials.map((c) => (
                 <TableRow
                   key={c.id}
-                  onClick={() => setFormData(c)}
+                  onClick={async () => {
+                    const full = await getExchangeCredential(selectedExchange, c.id);
+                    setFormData(full);
+                  }}
                   style={{ cursor: "pointer" }}
                 >
                   <TableCell>{c.id}</TableCell>
