@@ -11,6 +11,13 @@ class Exchange(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     code = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
+    kind = Column(Text, nullable=False)
+    environment = Column(Text, nullable=False)
+    base_url_public = Column(Text)
+    base_url_private = Column(Text)
+    ws_public_url = Column(Text)
+    ws_private_url = Column(Text)
+    data_feed_url = Column(Text)
     fetch_symbols_interval_min = Column(SmallInteger, nullable=False, server_default=text("60"))
     fetch_filters_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
     fetch_limits_interval_min  = Column(SmallInteger, nullable=False, server_default=text("1440"))
@@ -44,19 +51,30 @@ class ExchangeCredential(Base):
     exchange = relationship("Exchange", back_populates="credentials")
 class ExchangeSymbol(Base):
     __tablename__ = "exchange_symbols"
+
     id = Column(BIGINT, primary_key=True, autoincrement=True)
     exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
     symbol = Column(Text, nullable=False)
-    base_asset = Column(Text)
-    quote_asset = Column(Text)
+    base_asset = Column(Text, nullable=False)
+    quote_asset = Column(Text, nullable=False)
+
+    status = Column(Text)                           
+    type = Column(Text, server_default="spot")      
+    base_precision = Column(Integer)                
+    quote_precision = Column(Integer)               
     step_size = Column(Numeric)
     tick_size = Column(Numeric)
     min_qty = Column(Numeric)
     max_qty = Column(Numeric)
+    min_notional = Column(Numeric)                  
+    max_notional = Column(Numeric)                  
+
     filters = Column(JSONB, server_default="{}")
     is_active = Column(Boolean, nullable=False, server_default="true")
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
     exchange = relationship("Exchange", back_populates="symbols")
+
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
     id = Column(BIGINT, primary_key=True, autoincrement=True)
