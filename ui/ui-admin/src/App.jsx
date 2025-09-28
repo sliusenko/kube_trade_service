@@ -1,9 +1,9 @@
 import React from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
+import { signOut } from "./utils/auth";  // ✅ імпорт
 import UsersPage from "./pages/UsersPage";
-import ExchangesPage from "./pages/ExchangesPage";   // ✅ новий імпорт
+import ExchangesPage from "./pages/ExchangesPage";
 
-// універсальний шаблон сторінки
 const Page = ({ title, children }) => (
   <div className="p-6">
     <h1 style={{ fontSize: 28, marginBottom: 12 }}>{title}</h1>
@@ -11,7 +11,6 @@ const Page = ({ title, children }) => (
   </div>
 );
 
-// заглушки
 const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
 const Settings = () => <Page title="Settings">Загальні налаштування.</Page>;
 
@@ -29,15 +28,32 @@ export default function App() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", minHeight: "100vh" }}>
       {/* Sidebar */}
-      <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16 }}>
+      <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16, display: "flex", flexDirection: "column", height: "100%" }}>
         <div style={{ fontWeight: 800, marginBottom: 16 }}>Admin Panel</div>
-        <nav style={{ display: "grid", gap: 6 }}>
+        <nav style={{ display: "grid", gap: 6, flex: 1 }}>
           <NavLink to="/" style={navStyle} end>Dashboard</NavLink>
           <NavLink to="/users" style={navStyle}>Users</NavLink>
           <NavLink to="/exchanges" style={navStyle}>Exchanges</NavLink>
           <NavLink to="/pairs" style={navStyle}>Pairs</NavLink>
           <NavLink to="/settings" style={navStyle}>Settings</NavLink>
         </nav>
+
+        {/* 🔑 Sign Out */}
+        <button
+          onClick={signOut}
+          style={{
+            marginTop: "auto",
+            padding: "10px 14px",
+            borderRadius: 10,
+            fontWeight: 600,
+            background: "#fee2e2",
+            color: "#b91c1c",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Sign Out
+        </button>
       </aside>
 
       {/* Main content */}
@@ -45,8 +61,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<UsersPage />} />
-          <Route path="/exchanges" element={<ExchangesPage />} /> {/* ✅ тепер справжня сторінка */}
-          <Route path="/pairs" element={<Pairs />} />
+          <Route path="/exchanges" element={<ExchangesPage />} />
+          <Route path="/pairs" element={<Page title="Pairs">Pairs management here.</Page>} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
         </Routes>
