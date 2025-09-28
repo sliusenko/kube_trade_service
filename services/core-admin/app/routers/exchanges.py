@@ -5,12 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.deps.db import get_session
 from app.models.exchanges import (
-    Exchange, ExchangeCredential, ExchangeSymbol, ExchangeLimit, ExchangeStatusHistory
+    Exchange, ExchangeCredential, ExchangeSymbol,
+    ExchangeLimit, ExchangeStatusHistory, ExchangeFee
 )
 from app.schemas.exchanges import (
     ExchangeCreate, ExchangeUpdate, ExchangeRead,
     ExchangeCredentialCreate, ExchangeCredentialRead,
-    ExchangeSymbolRead, ExchangeLimitRead, ExchangeStatusHistoryRead
+    ExchangeSymbolRead, ExchangeLimitRead,
+    ExchangeStatusHistoryRead, ExchangeFeeRead
 )
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
@@ -138,6 +140,16 @@ async def list_symbols(exchange_id: UUID, db: AsyncSession = Depends(get_session
 async def list_limits(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
+    )
+    return result.scalars().all()
+
+# ----------------------------------------------------------------
+# Exchange Fees (read-only)
+# ----------------------------------------------------------------
+@router.get("/{exchange_id}/fees", response_model=List[ExchangeFeeRead])
+async def list_fees(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(
+        select(ExchangeFee).where(ExchangeFee.exchange_id == exchange_id)
     )
     return result.scalars().all()
 

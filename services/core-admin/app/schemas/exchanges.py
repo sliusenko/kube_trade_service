@@ -132,6 +132,21 @@ class ExchangeSymbolRead(BaseModel):
         from_attributes = True
 
 # -----------------------------
+# ExchangeFee (read-only)
+# -----------------------------
+class ExchangeFeeRead(BaseModel):
+    id: int
+    exchange_id: UUID
+    symbol_id: Optional[int]
+    volume_threshold: float
+    maker_fee: Optional[float]
+    taker_fee: Optional[float]
+    fetched_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# -----------------------------
 # ExchangeLimit (read-only)
 # -----------------------------
 class ExchangeLimitRead(BaseModel):

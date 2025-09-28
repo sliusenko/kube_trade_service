@@ -71,6 +71,11 @@ class Exchange(Base):
         back_populates="exchange",
         cascade="all, delete-orphan"
     )
+    fees = relationship(
+        "ExchangeFee",
+        back_populates="exchange",
+        cascade="all, delete-orphan"
+    )
 class ExchangeCredential(Base):
     __tablename__ = "exchange_credentials"
 
@@ -123,6 +128,22 @@ class ExchangeSymbol(Base):
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     exchange = relationship("Exchange", back_populates="symbols")
+    fees = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+class ExchangeFee(Base):
+    __tablename__ = "exchange_fees"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
+    symbol_id = Column(BigInteger, ForeignKey("exchange_symbols.id", ondelete="CASCADE"), nullable=True)
+
+    volume_threshold = Column(Numeric, nullable=False)  # USD 30-day volume
+    maker_fee = Column(Numeric, nullable=True)  # %
+    taker_fee = Column(Numeric, nullable=True)  # %
+
+    fetched_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+
+    exchange = relationship("Exchange", back_populates="fees")
+    symbol = relationship("ExchangeSymbol", back_populates="fees")
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
 
