@@ -57,6 +57,21 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     f"(кожні {ex.fetch_limits_interval_min} хв)"
                 )
 
+            # ---- fees ----
+            if hasattr(module, "refresh_fees"):
+                scheduler.add_job(
+                    module.refresh_fees,
+                    "interval",
+                    minutes=ex.fetch_fees_interval_min,
+                    args=[client, ex.id],
+                    id=f"fees_{ex.code}_{ex.id}",
+                    replace_existing=True,
+                )
+                logging.info(
+                    f"🕑 Додав job fees для {ex.code} "
+                    f"(кожні {ex.fetch_fees_interval_min} хв)"
+                )
+
     logging.info("✅ Завантаження jobs завершено")
 
 
