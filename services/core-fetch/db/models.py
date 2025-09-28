@@ -24,6 +24,7 @@ class Exchange(Base):
     credentials = relationship("ExchangeCredential", back_populates="exchange", cascade="all, delete-orphan")
     symbols = relationship("ExchangeSymbol", back_populates="exchange", cascade="all, delete-orphan")
     limits = relationship("ExchangeLimit", back_populates="exchange", cascade="all, delete-orphan")
+    fees = relationship("ExchangeFee", back_populates="exchange", cascade="all, delete-orphan")  # 👈 додали
     status_history = relationship("ExchangeStatusHistory", back_populates="exchange", cascade="all, delete-orphan")
     last_symbols_refresh_at = Column(TIMESTAMP(timezone=True))
     last_filters_refresh_at = Column(TIMESTAMP(timezone=True))
@@ -79,6 +80,7 @@ class ExchangeSymbol(Base):
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
     exchange = relationship("Exchange", back_populates="symbols")
+    fees = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
     id = Column(BIGINT, primary_key=True, autoincrement=True)
