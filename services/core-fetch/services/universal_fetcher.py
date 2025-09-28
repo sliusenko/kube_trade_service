@@ -3,7 +3,7 @@ import requests
 from decimal import Decimal
 from sqlalchemy import delete, update, func
 from sqlalchemy.sql import func
-from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory
+from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory, ExchangeFee
 from core_fetch.db.session import SessionLocal
 from binance.client import Client as BinanceClient
 
@@ -230,6 +230,91 @@ async def refresh_limits(client, exchange_id):
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
                 event="limits_refresh",
+                status="error",
+                message=str(e)
+            ))
+            await session.commit()
+
+async def refresh_fees(client, exchange_id):
+    logging.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
+    fees_to_insert = []
+
+    try:
+        # ---- Binance ----
+        if client["exchange_code"].upper() == "BINANCE":
+            url = "/api/v3/account"
+            resp = await client["http"].get(url)
+            data = resp.json()
+            maker = float(data.get("makerCommission", 10)) / 10000
+            taker = float(data.get("takerCommission", 10)) / 10000
+
+            fees_to_insert.append(dict(
+                exchange_id=exchange_id,
+                symbol_id=None,
+                volume_threshold=0,
+                maker_fee=maker,
+                taker_fee=taker,
+            ))
+
+        # ---- Kraken ----
+        elif client["exchange_code"].upper() == "KRAKEN":
+            url = "/0/public/AssetPairs"
+            resp = await client["http"].get(url)
+            data = resp.json()
+
+            for key, s in data.get("result", {}).items():
+                fees = s.get("fees", [])
+                fees_maker = s.get("fees_maker", [])
+
+                # fees = [[volume, taker%], ...]
+                # fees_maker = [[volume, maker%], ...]
+                for idx, level in enumerate(fees):
+                    volume, taker = level
+                    maker = fees_maker[idx][1] if idx < len(fees_maker) else None
+
+                    fees_to_insert.append(dict(
+                        exchange_id=exchange_id,
+                        symbol_id=None,   # тут можна підставити id символу, якщо робиш lookup по key
+                        volume_threshold=Decimal(volume),
+                        maker_fee=Decimal(maker) if maker is not None else None,
+                        taker_fee=Decimal(taker),
+                    ))
+
+        else:
+            logging.warning(f"❌ refresh_fees не реалізовано для {client['exchange_code']}")
+            return
+
+        # ---- Запис у базу ----
+        async with SessionLocal() as session:
+            logging.debug(f"🗑️ Видаляю старі fees для exchange_id={exchange_id}")
+            await session.execute(delete(ExchangeFee).where(ExchangeFee.exchange_id == exchange_id))
+
+            if fees_to_insert:
+                session.add_all([ExchangeFee(**f) for f in fees_to_insert])
+
+            await session.execute(
+                update(Exchange)
+                .where(Exchange.id == exchange_id)
+                .values(last_fees_refresh_at=func.now())
+            )
+
+            session.add(ExchangeStatusHistory(
+                exchange_id=exchange_id,
+                event="fees_refresh",
+                status="ok",
+                message=f"{len(fees_to_insert)} fees збережено"
+            ))
+
+            await session.commit()
+
+        logging.info(f"✅ [DONE] {len(fees_to_insert)} fees збережено для {client['exchange_code']}")
+
+    except Exception as e:
+        logging.exception(f"❌ refresh_fees error for {client['exchange_code']}: {e}")
+        async with SessionLocal() as session:
+            session.add(ExchangeStatusHistory(
+                exchange_id=exchange_id,
+                event="fees_refresh",
                 status="error",
                 message=str(e)
             ))

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Numeric, TIMESTAMP, SmallInteger
+from sqlalchemy import Column, Text, Integer, Boolean, ForeignKey, Numeric, TIMESTAMP, SmallInteger, BigInteger
 from sqlalchemy.dialects.postgresql import UUID, JSONB, BIGINT
 from sqlalchemy.sql import text
 from sqlalchemy.orm import declarative_base, relationship
@@ -27,6 +27,7 @@ class Exchange(Base):
     status_history = relationship("ExchangeStatusHistory", back_populates="exchange", cascade="all, delete-orphan")
     last_symbols_refresh_at = Column(TIMESTAMP(timezone=True))
     last_filters_refresh_at = Column(TIMESTAMP(timezone=True))
+    last_fees_refresh_at = Column(TIMESTAMP(timezone=True))
     last_limits_refresh_at = Column(TIMESTAMP(timezone=True))
 
 class ExchangeCredential(Base):
@@ -89,6 +90,23 @@ class ExchangeLimit(Base):
     raw_json = Column(JSONB, server_default="{}")
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     exchange = relationship("Exchange", back_populates="limits")
+class ExchangeFee(Base):
+    __tablename__ = "exchange_fees"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
+    symbol_id = Column(BigInteger, ForeignKey("exchange_symbols.id", ondelete="CASCADE"), nullable=True)
+
+    volume_threshold = Column(Numeric, nullable=False)  # 30d volume threshold
+    maker_fee = Column(Numeric, nullable=True)          # %
+    taker_fee = Column(Numeric, nullable=True)          # %
+
+    fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    # 🔗 Relationships
+    exchange = relationship("Exchange", back_populates="fees")
+    symbol = relationship("ExchangeSymbol", back_populates="fees")
+
 class ExchangeStatusHistory(Base):
     __tablename__ = "exchange_status_history"
 

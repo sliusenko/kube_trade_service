@@ -36,6 +36,7 @@ class Exchange(Base):
 
     last_symbols_refresh_at = Column(TIMESTAMP(timezone=True))
     last_filters_refresh_at = Column(TIMESTAMP(timezone=True))
+    last_fees_refresh_at = Column(TIMESTAMP(timezone=True))
     last_limits_refresh_at  = Column(TIMESTAMP(timezone=True))
 
     status     = Column(Text)
