@@ -27,6 +27,7 @@ class Exchange(Base):
     fetch_symbols_interval_min = Column(SmallInteger, nullable=False, server_default=text("60"))
     fetch_filters_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
     fetch_limits_interval_min  = Column(SmallInteger, nullable=False, server_default=text("1440"))
+    fetch_fees_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
 
     rate_limit_per_min = Column(Integer)
     recv_window_ms     = Column(Integer, server_default=text("5000"))

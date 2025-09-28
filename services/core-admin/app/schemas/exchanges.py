@@ -44,6 +44,10 @@ class ExchangeBase(BaseModel):
         1440, description="Interval (minutes) to fetch limits"
     )
 
+    fetch_fees_interval_min: Optional[int] = Field(
+        1440, description="Interval (minutes) to fetch fees"
+    )
+
     is_active: Optional[bool] = Field(True, description="Is this exchange active?")
 class ExchangeCreate(ExchangeBase):
     pass
@@ -59,6 +63,7 @@ class ExchangeUpdate(BaseModel):
     fetch_symbols_interval_min: Optional[int]
     fetch_filters_interval_min: Optional[int]
     fetch_limits_interval_min: Optional[int]
+    fetch_fees_interval_min: Optional[int]
     is_active: Optional[bool]
 class ExchangeRead(ExchangeBase):
     id: UUID
