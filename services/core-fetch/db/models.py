@@ -21,6 +21,7 @@ class Exchange(Base):
     fetch_symbols_interval_min = Column(SmallInteger, nullable=False, server_default=text("60"))
     fetch_filters_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
     fetch_limits_interval_min  = Column(SmallInteger, nullable=False, server_default=text("1440"))
+    fetch_fees_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
     credentials = relationship("ExchangeCredential", back_populates="exchange", cascade="all, delete-orphan")
     symbols = relationship("ExchangeSymbol", back_populates="exchange", cascade="all, delete-orphan")
     limits = relationship("ExchangeLimit", back_populates="exchange", cascade="all, delete-orphan")
