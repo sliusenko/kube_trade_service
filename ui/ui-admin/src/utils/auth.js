@@ -1,14 +1,12 @@
 // src/utils/auth.js
-
-/**
- * Виконує повний вихід із Keycloak (SSO).
- * Після виклику користувача редіректить на портал,
- * де його змусить знову залогінитися.
- */
 export function signOut() {
-  const keycloakLogoutUrl =
-    "https://auth.dazhcore.com/realms/trade-realm/protocol/openid-connect/logout" +
-    "?redirect_uri=" + encodeURIComponent("https://portal.dazhcore.com/");
+  const keycloakUrl = process.env.REACT_APP_KEYCLOAK_URL;
+  const realm = process.env.REACT_APP_KEYCLOAK_REALM;
+  const portalUrl = process.env.REACT_APP_PORTAL_URL;
 
-  window.location.href = keycloakLogoutUrl;
+  const logoutUrl =
+    `${keycloakUrl}/realms/${realm}/protocol/openid-connect/logout` +
+    `?redirect_uri=${encodeURIComponent(portalUrl)}`;
+
+  window.location.href = logoutUrl;
 }
