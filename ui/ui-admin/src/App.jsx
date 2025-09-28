@@ -13,7 +13,6 @@ const Page = ({ title, children }) => (
 
 // заглушки
 const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
-const Pairs = () => <Page title="Pairs">Управління парами.</Page>;
 const Settings = () => <Page title="Settings">Загальні налаштування.</Page>;
 
 const navStyle = ({ isActive }) => ({
