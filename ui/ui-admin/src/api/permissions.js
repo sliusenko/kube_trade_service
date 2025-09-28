@@ -1,25 +1,14 @@
+// src/api/permissions.js
 import apiClient from "./apiClient";
 
-// Отримати всі permissions
-export async function getPermissions() {
-  const res = await apiClient.get("/permissions/");
-  return res.data;
-}
+export const getPermissions = () =>
+  apiClient.get("/permissions/").then((r) => r.data);
 
-// Створити новий permission
-export async function createPermission(permission) {
-  const res = await apiClient.post("/permissions/", permission);
-  return res.data;
-}
+export const createPermission = (permission) =>
+  apiClient.post("/permissions/", permission).then((r) => r.data);
 
-// Оновити permission
-export async function updatePermission(name, permission) {
-  const res = await apiClient.put(`/permissions/${name}`, permission);
-  return res.data;
-}
+export const updatePermission = (name, permission) =>
+  apiClient.put(`/permissions/${name}`, permission).then((r) => r.data);
 
-// Видалити permission
-export async function deletePermission(name) {
-  const res = await apiClient.delete(`/permissions/${name}`);
-  return res.data;
-}
+export const deletePermission = (name) =>
+  apiClient.delete(`/permissions/${name}`).then((r) => r.data);
