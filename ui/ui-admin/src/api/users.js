@@ -8,7 +8,7 @@ export const getUsers = async () => {
 
 // Створити користувача
 export const createUser = async (user) => {
-  const response = await apiClient.post("/users/users/", user);
+  const response = await apiClient.post("/users/", user);
   return response.data;
 };
 
