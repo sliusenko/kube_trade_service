@@ -31,15 +31,7 @@ export default function AdminPage() {
   const [openUser, setOpenUser] = useState(false);
   const [editUser, setEditUser] = useState(null);
 
-  const loadUsers = async () => {
-    try {
-      const data = await getUsers();
-      setUsers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error("❌ loadUsers failed:", e);
-      setUsers([]);
-    }
-  };
+  const loadUsers = () => getUsers().then(setUsers);
 
   useEffect(() => { loadUsers(); }, []);
 

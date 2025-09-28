@@ -1,41 +1,75 @@
+import apiClient from "./apiClient";
+
 // -----------------------------
 // Exchanges CRUD
 // -----------------------------
 
-export const getExchanges = () =>
-  apiClient.get("/exchanges/").then((r) => r.data);
+// Отримати всі біржі
+export const getExchanges = async () => {
+  const res = await apiClient.get("/exchanges/");
+  return res.data;
+};
 
-export const createExchange = (data) =>
-  apiClient.post("/exchanges/", data).then((r) => r.data);
+// Створити біржу
+export const createExchange = async (data) => {
+  const res = await apiClient.post("/exchanges/", data);
+  return res.data;
+};
 
-export const updateExchange = (id, data) =>
-  apiClient.put(`/exchanges/${id}`, data).then((r) => r.data);
+// Оновити біржу
+export const updateExchange = async (id, data) => {
+  const res = await apiClient.put(`/exchanges/${id}`, data);
+  return res.data;
+};
 
-export const deleteExchange = (id) =>
-  apiClient.delete(`/exchanges/${id}`).then((r) => r.data);
+// Видалити біржу
+export const deleteExchange = async (id) => {
+  const res = await apiClient.delete(`/exchanges/${id}`);
+  return res.data;
+};
 
 // -----------------------------
 // Exchange Credentials CRUD
 // -----------------------------
 
-export const getExchangeCredentials = (exchangeId) =>
-  apiClient.get(`/exchanges/${exchangeId}/credentials`).then((r) => r.data);
+// Отримати всі креденшали для конкретної біржі
+export const getExchangeCredentials = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/credentials`);
+  return res.data;
+};
 
-export const createExchangeCredential = (exchangeId, data) =>
-  apiClient.post(`/exchanges/${exchangeId}/credentials`, data).then((r) => r.data);
+// Створити креденшал
+export const createExchangeCredential = async (exchangeId, data) => {
+  const res = await apiClient.post(`/exchanges/${exchangeId}/credentials`, data);
+  return res.data;
+};
 
-export const updateExchangeCredential = (exchangeId, credId, data) =>
-  apiClient.put(`/exchanges/${exchangeId}/credentials/${credId}`, data).then((r) => r.data);
+// Оновити креденшал
+export const updateExchangeCredential = async (exchangeId, credId, data) => {
+  const res = await apiClient.put(
+    `/exchanges/${exchangeId}/credentials/${credId}`,
+    data
+  );
+  return res.data;
+};
 
-export const deleteExchangeCredential = (exchangeId, credId) =>
-  apiClient.delete(`/exchanges/${exchangeId}/credentials/${credId}`).then((r) => r.data);
+// Видалити креденшал
+export const deleteExchangeCredential = async (exchangeId, credId) => {
+  const res = await apiClient.delete(
+    `/exchanges/${exchangeId}/credentials/${credId}`
+  );
+  return res.data;
+};
 
-// -----------------------------
-// Допоміжні функції
-// -----------------------------
+// additional functions
+export async function getExchange(id) {
+  const res = await fetch(`/api/exchanges/${id}`);
+  if (!res.ok) throw new Error("Failed to load exchange");
+  return res.json();
+}
 
-export const getExchange = (id) =>
-  apiClient.get(`/exchanges/${id}`).then((r) => r.data);
-
-export const getExchangeCredential = (exchangeId, credentialId) =>
-  apiClient.get(`/exchanges/${exchangeId}/credentials/${credentialId}`).then((r) => r.data);
+export async function getExchangeCredential(exchangeId, credentialId) {
+  const res = await fetch(`/api/exchanges/${exchangeId}/credentials/${credentialId}`);
+  if (!res.ok) throw new Error("Failed to load credential");
+  return res.json();
+}

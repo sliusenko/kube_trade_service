@@ -318,8 +318,9 @@ export default function ExchangesPage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
+                <TableCell>Exchange ID</TableCell>
                 <TableCell>Symbol</TableCell>
+                <TableCell>Active</TableCell>
                 <TableCell>Base Asset</TableCell>
                 <TableCell>Quote Asset</TableCell>
               </TableRow>
@@ -327,8 +328,9 @@ export default function ExchangesPage() {
             <TableBody>
               {symbols.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell>{s.id}</TableCell>
+                  <TableCell>{s.exchange_id}</TableCell>
                   <TableCell>{s.symbol}</TableCell>
+                  <TableCell>{s.is_active}</TableCell>
                   <TableCell>{s.base_asset}</TableCell>
                   <TableCell>{s.quote_asset}</TableCell>
                 </TableRow>

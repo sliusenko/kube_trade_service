@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
-import { signOut } from "./utils/auth";  // ✅ імпорт
+import { signOut } from "./utils/auth";
 import UsersPage from "./pages/UsersPage";
 import ExchangesPage from "./pages/ExchangesPage";
 
@@ -30,43 +30,44 @@ export default function App() {
       {/* Sidebar */}
       <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16, display: "flex", flexDirection: "column", height: "100%" }}>
         <div style={{ fontWeight: 800, marginBottom: 16 }}>Admin Panel</div>
-        <nav style={{ display: "grid", gap: 6, flex: 1 }}>
+        <nav style={{ display: "grid", gap: 6 }}>
           <NavLink to="/" style={navStyle} end>Dashboard</NavLink>
           <NavLink to="/users" style={navStyle}>Users</NavLink>
           <NavLink to="/exchanges" style={navStyle}>Exchanges</NavLink>
-          <NavLink to="/pairs" style={navStyle}>Pairs</NavLink>
           <NavLink to="/settings" style={navStyle}>Settings</NavLink>
         </nav>
-
-        {/* 🔑 Sign Out */}
-        <button
-          onClick={signOut}
-          style={{
-            marginTop: "auto",
-            padding: "10px 14px",
-            borderRadius: 10,
-            fontWeight: 600,
-            background: "#fee2e2",
-            color: "#b91c1c",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Sign Out
-        </button>
       </aside>
 
       {/* Main content */}
-      <main>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/exchanges" element={<ExchangesPage />} />
-          <Route path="/pairs" element={<Page title="Pairs">Pairs management here.</Page>} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
-        </Routes>
-      </main>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* 🔑 Header з кнопкою Sign Out */}
+        <header style={{ borderBottom: "1px solid #e5e7eb", padding: "10px 16px", display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={signOut}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 8,
+              fontWeight: 600,
+              background: "#fee2e2",
+              color: "#b91c1c",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Sign Out
+          </button>
+        </header>
+
+        <main style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/exchanges" element={<ExchangesPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }

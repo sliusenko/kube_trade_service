@@ -1,7 +1,25 @@
-// src/api/roles.js
 import apiClient from "./apiClient";
 
-export const getRoles = () => apiClient.get("/roles/").then(r => r.data);
-export const createRole = (role) => apiClient.post("/roles/", role).then(r => r.data);
-export const updateRole = (name, role) => apiClient.put(`/roles/${name}`, role).then(r => r.data);
-export const deleteRole = (name) => apiClient.delete(`/roles/${name}`).then(r => r.data);
+// Отримати всі ролі
+export async function getRoles() {
+  const res = await apiClient.get("/roles/");
+  return res.data;
+}
+
+// Створити нову роль
+export async function createRole(role) {
+  const res = await apiClient.post("/roles/", role);
+  return res.data;
+}
+
+// Оновити роль
+export async function updateRole(name, role) {
+  const res = await apiClient.put(`/roles/${name}`, role);
+  return res.data;
+}
+
+// Видалити роль
+export async function deleteRole(name) {
+  const res = await apiClient.delete(`/roles/${name}`);
+  return res.data;
+}

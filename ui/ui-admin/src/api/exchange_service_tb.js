@@ -1,13 +1,23 @@
 import apiClient from "./apiClient";
 
+// ---------------------------
+// Додаткові API для бірж
+// ---------------------------
+
 // Symbols
-export const getExchangeSymbols = (exchangeId) =>
-  apiClient.get(`/exchanges/${exchangeId}/symbols`).then(r => r.data);
+export const getExchangeSymbols = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/symbols`);
+  return res.data;
+};
 
 // Limits
-export const getExchangeLimits = (exchangeId) =>
-  apiClient.get(`/exchanges/${exchangeId}/limits`).then(r => r.data);
+export const getExchangeLimits = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/limits`);
+  return res.data;
+};
 
 // History
-export const getExchangeHistory = (exchangeId) =>
-  apiClient.get(`/exchanges/${exchangeId}/history`).then(r => r.data);
+export const getExchangeHistory = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/history`);
+  return res.data;
+};
