@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.scheduler import scheduler
+from core_fetch.app import scheduler
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 

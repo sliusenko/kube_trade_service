@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from app.scheduler import start_scheduler
-from app.routers import price_history, jobs
+from .scheduler import start_scheduler
+from core_fetch.app.routers import price_history, jobs
 
-app = FastAPI(title="core-fetch")
+app = FastAPI(title="core_fetch")
 
 # Register routers
 app.include_router(price_history.router)
