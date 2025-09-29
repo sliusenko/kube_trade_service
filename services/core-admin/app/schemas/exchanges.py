@@ -53,7 +53,7 @@ class ExchangeCreate(ExchangeBase):
     pass
 class ExchangeUpdate(BaseModel):
     name: Optional[str]
-    kind: Optional[str]
+    kind: Optional[Literal["spot","futures","margin"]]
     environment: Optional[str]
     base_url_public: Optional[str]
     base_url_private: Optional[str]
@@ -112,30 +112,66 @@ class ExchangeCredentialRead(ExchangeCredentialBase):
     class Config:
         from_attributes = True
 
-# -----------------------------
-# ExchangeSymbol (read-only)
-# -----------------------------
+class ExchangeSymbol(Base):
+    __tablename__ = "exchange_symbols"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
+
+    symbol_id = Column(Text, nullable=False)
+    symbol = Column(Text, nullable=False) 
+
+    base_asset = Column(Text, nullable=False)
+    quote_asset = Column(Text, nullable=False)
+    status = Column(Text)
+    type = Column(Text, server_default="spot")
+
+    base_precision = Column(Integer)
+    quote_precision = Column(Integer)
+    step_size = Column(Numeric)
+    tick_size = Column(Numeric)
+    min_qty = Column(Numeric)
+    max_qty = Column(Numeric)
+    min_notional = Column(Numeric)
+    max_notional = Column(Numeric)
+
+    filters = Column(JSONB, server_default="{}")
+    is_active = Column(Boolean, nullable=False, server_default="true")
+    fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    exchange = relationship("Exchange", back_populates="symbols")
+    fees = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "symbol_id", name="uq_exchange_symbol"),
+    )
+
 class ExchangeSymbolRead(BaseModel):
     id: int
     exchange_id: UUID
+
+    symbol_id: str
     symbol: str
+
     base_asset: str
     quote_asset: str
     status: Optional[str]
     type: Optional[str]
+
     step_size: Optional[float]
     tick_size: Optional[float]
     min_qty: Optional[float]
     max_qty: Optional[float]
     min_notional: Optional[float]
     max_notional: Optional[float]
+
     filters: dict
     is_active: bool
     fetched_at: datetime
 
     class Config:
         from_attributes = True
-
+        
 # -----------------------------
 # ExchangeFee (read-only)
 # -----------------------------
