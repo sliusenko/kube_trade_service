@@ -61,27 +61,36 @@ class ExchangeSymbol(Base):
 
     id = Column(BIGINT, primary_key=True, autoincrement=True)
     exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
-    symbol = Column(Text, nullable=False)
+
+    symbol_id = Column(Text, nullable=False)
+    symbol    = Column(Text, nullable=False)
+
     base_asset = Column(Text, nullable=False)
     quote_asset = Column(Text, nullable=False)
 
-    status = Column(Text)                           
-    type = Column(Text, server_default="spot")      
-    base_precision = Column(Integer)                
-    quote_precision = Column(Integer)               
-    step_size = Column(Numeric)
-    tick_size = Column(Numeric)
-    min_qty = Column(Numeric)
-    max_qty = Column(Numeric)
-    min_notional = Column(Numeric)                  
-    max_notional = Column(Numeric)                  
+    status = Column(Text)
+    type = Column(Text, server_default="spot")
 
-    filters = Column(JSONB, server_default="{}")
+    base_precision  = Column(Integer)
+    quote_precision = Column(Integer)
+    step_size   = Column(Numeric)
+    tick_size   = Column(Numeric)
+    min_qty     = Column(Numeric)
+    max_qty     = Column(Numeric)
+    min_notional = Column(Numeric)
+    max_notional = Column(Numeric)
+
+    filters   = Column(JSONB, server_default="{}")
     is_active = Column(Boolean, nullable=False, server_default="true")
     fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
 
+    # 🔗 Relationships
     exchange = relationship("Exchange", back_populates="symbols")
-    fees = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+    fees     = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "symbol_id", name="uq_exchange_symbol"),
+    )
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
     id = Column(BIGINT, primary_key=True, autoincrement=True)
