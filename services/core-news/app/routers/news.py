@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models.news_sentiment import NewsSentiment
-from app.schemas.news_sentiment import NewsSentimentCreate, NewsSentimentInDB, NewsSentimentUpdate
+from common.models.news_sentiment import NewsSentiment
+from common.schemas.news_sentiment import NewsSentimentCreate, NewsSentimentInDB, NewsSentimentUpdate
 from app.deps.db import get_session
 
 router = APIRouter(prefix="/news", tags=["news"])
