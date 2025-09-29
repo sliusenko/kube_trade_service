@@ -5,7 +5,7 @@ from typing import List
 
 from common.deps.db import get_session
 from common.models.auth import Permission
-from common.schemas.permissions import PermissionCreate, PermissionUpdate, PermissionOut
+from common.schemas.users import PermissionCreate, PermissionUpdate, PermissionOut
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
