@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 
 from common.models.news_sentiment import NewsSentiment
 from common.schemas.news_sentiment import NewsSentimentCreate, NewsSentimentInDB, NewsSentimentUpdate
-from app.deps.db import get_session
+from common.deps.db import get_session
 
 router = APIRouter(prefix="/news", tags=["news"])
 
