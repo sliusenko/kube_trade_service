@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, Text, Numeric, TIMESTAMP
 from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
-
 class NewsSentiment(Base):
     __tablename__ = "news_sentiment"
 
