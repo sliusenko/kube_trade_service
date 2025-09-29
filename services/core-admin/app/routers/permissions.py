@@ -4,8 +4,8 @@ from sqlalchemy import select
 from typing import List
 
 from app.deps.db import get_session
-from app.models.auth import Permission
-from app.schemas.permissions import PermissionCreate, PermissionUpdate, PermissionOut
+from common.models.auth import Permission
+from common.schemas.permissions import PermissionCreate, PermissionUpdate, PermissionOut
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
