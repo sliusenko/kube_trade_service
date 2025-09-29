@@ -6,10 +6,12 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../services"))
 
 # імпортуємо Base з усіх сервісів
-from core_admin.app.models import Base as AdminBase
-from core_fetch.app.models.exchanges_symbols import Base as FetchBase
-from core_fetch.app.models.price_history import Base as PriceBase
-from core_news.app.models.news_sentiment import Base as NewsBase
+from services.core_admin.app.models.base import Base
+from services.core_admin.app import models as admin_models
+from services.core_fetch.app import models as fetch_models
+from services.core_news.app import models as news_models
+
+target_metadata = Base.metadata
 
 # об’єднуємо metadata
 target_metadata = [
