@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.deps.db import get_session
-from app.models.exchanges import (
+from common.models.exchanges import (
     Exchange, ExchangeCredential, ExchangeSymbol,
     ExchangeLimit, ExchangeStatusHistory, ExchangeFee
 )
-from app.schemas.exchanges import (
+from common.schemas.exchanges import (
     ExchangeCreate, ExchangeUpdate, ExchangeRead,
     ExchangeCredentialCreate, ExchangeCredentialRead,
     ExchangeSymbolRead, ExchangeLimitRead,
