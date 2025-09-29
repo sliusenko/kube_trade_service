@@ -2,10 +2,10 @@ import asyncio
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
-from core_fetch.db.session import SessionLocal
-from core_fetch.db.models import Exchange
-from core_fetch.services.clients import get_exchange_client
-from core_fetch.services import universal_fetcher
+from app.models.exchanges_symbols import Exchange
+from app.deps.clients import get_exchange_client
+from app.services import universal_fetcher
+from app.deps.session import SessionLocal
 
 
 async def load_jobs(scheduler: AsyncIOScheduler):
