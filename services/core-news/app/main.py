@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
 from app.routers import news
 from app.services import news_service
 from app.deps.db import async_session_maker
+import os
+FETCH_NEWS_INTERVAL_MIN = int(os.getenv("FETCH_NEWS_INTERVAL_MIN", "10"))
+UPDATE_NEWS_PRICES_INTERVAL_HOURS = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "1"))
+
 
 app = FastAPI(title="core-news")
 
