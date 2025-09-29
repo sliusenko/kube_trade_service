@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Float, LargeBinary
-from common.models.base import Base
+from .base import Base
 
 class ApschedulerJob(Base):
     __tablename__ = "apscheduler_jobs"

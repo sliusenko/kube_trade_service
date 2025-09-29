@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Text, TIMESTAMP, ForeignKey, String, Boolean
 from sqlalchemy.sql import func
-from common.models.base import Base
+from .base import Base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -39,3 +39,4 @@ class Permission(Base):
     name = Column(Text, primary_key=True)
     description = Column(Text)
 
+    roles = relationship("RolePermission", back_populates="permission")
