@@ -1,7 +1,7 @@
 import logging
 import requests
 from decimal import Decimal
-from sqlalchemy import delete, update, func
+from sqlalchemy import delete, update, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
 from common.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory, ExchangeFee

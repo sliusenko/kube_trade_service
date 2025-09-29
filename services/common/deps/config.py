@@ -8,6 +8,7 @@ class Settings:
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "trade")
     AUTH_CRYPTONEW_TOKEN: str = os.getenv("AUTH_CRYPTONEW_TOKEN", "TOKEN")
+    FETCH_PRICE_INTERVAL_MIN: int = os.getenv("FETCH_PRICE_INTERVAL_MIN", "10")
 
     @property
     def POSTGRES_DSN(self) -> str:

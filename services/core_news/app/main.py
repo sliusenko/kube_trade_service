@@ -3,8 +3,8 @@ import logging
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from app.routers import news
-from app.services import news_service
+from core_news.app.routers import news
+from core_news.app.services import news_service
 from common.deps.db import AsyncSessionLocal 
 
 log = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 FETCH_NEWS_INTERVAL_MIN = int(os.getenv("FETCH_NEWS_INTERVAL_MIN", "10"))
 UPDATE_NEWS_PRICES_INTERVAL_HOURS = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "1"))
 
-app = FastAPI(title="core-news")
+app = FastAPI(title="core_news")
 
 # Register routers
 app.include_router(news.router)
@@ -21,7 +21,7 @@ app.include_router(news.router)
 
 @app.on_event("startup")
 async def startup_event():
-    log.info("🚀 Starting core-news service")
+    log.info("🚀 Starting core_news service")
 
     scheduler = AsyncIOScheduler()
 

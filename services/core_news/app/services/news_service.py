@@ -7,7 +7,7 @@ from sqlalchemy import select
 from common.models.markethistory import NewsSentiment, PriceHistory
 from common.schemas.markethistory import NewsSentimentCreate
 from common.deps.db import get_session
-from common.deps.config import AUTH_CRYPTONEW_TOKEN
+from common.deps.config import settings
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 NEWS_QUERY = "bitcoin OR ethereum OR binance OR sec OR hack"
 NEWS_URL = (
     f"https://newsapi.org/v2/everything?q={NEWS_QUERY}"
-    f"&language=en&sortBy=publishedAt&pageSize=10&apiKey={AUTH_CRYPTONEW_TOKEN}"
+    f"&language=en&sortBy=publishedAt&pageSize=10&apiKey={settings.AUTH_CRYPTONEW_TOKEN}"
 )
 
 # Sentiment analyzer
