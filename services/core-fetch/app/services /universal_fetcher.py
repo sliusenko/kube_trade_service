@@ -9,15 +9,15 @@ from core_fetch.db.session import SessionLocal
 from binance.client import Client as BinanceClient
 from datetime import datetime, timezone
 import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.price_history import PriceHistory
+from app.deps.session import SessionLocal
 
 log = logging.getLogger(__name__)
 
-async def fetch_and_store_price(session: AsyncSession, exchange: str, pair: str):
+async def fetch_and_store_price(exchange: str, pair: str):
     """
     Fetch latest price from exchange and store in DB.
-    Currently implemented for Binance.
+    Currently supports Binance.
     """
     try:
         if exchange.upper() == "BINANCE":
@@ -28,6 +28,7 @@ async def fetch_and_store_price(session: AsyncSession, exchange: str, pair: str)
                 data = resp.json()
                 price = float(data["price"])
 
+            async with SessionLocal() as session:
                 record = PriceHistory(
                     timestamp=datetime.now(timezone.utc),
                     exchange=exchange,
@@ -36,11 +37,11 @@ async def fetch_and_store_price(session: AsyncSession, exchange: str, pair: str)
                 )
                 session.add(record)
                 await session.commit()
-                log.info(f"✅ Stored price {pair}={price} in DB")
+
+            log.info(f"✅ Stored price {pair}={price} in DB")
 
     except Exception as e:
         log.exception(f"❌ Error fetching price for {exchange}:{pair}: {e}")
-
 
 async def refresh_symbols(client, exchange_id):
     logging.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
