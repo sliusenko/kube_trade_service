@@ -24,6 +24,6 @@ async def startup_event():
         async with async_session_maker() as session:
             await news_service.update_news_prices(session)
 
-    scheduler.add_job(job_check_news, "interval", minutes=10)
-    scheduler.add_job(job_update_prices, "interval", hours=1)
+    scheduler.add_job(job_check_news, "interval", minutes=FETCH_NEWS_INTERVAL_MIN)
+    scheduler.add_job(job_update_prices, "interval", hours=UPDATE_NEWS_PRICES_INTERVAL_HOURS)
     scheduler.start()
