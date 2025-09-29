@@ -7,22 +7,23 @@ from app.deps.clients import get_exchange_client
 from app.services import universal_fetcher
 from app.deps.session import SessionLocal
 
+log = logging.getLogger(__name__)
 
 async def load_jobs(scheduler: AsyncIOScheduler):
-    logging.info("🚀 Починаю завантаження jobs")
+    log.info("🚀 Loading jobs")
 
     async with SessionLocal() as session:
         res = await session.execute(select(Exchange))
         exchanges = res.scalars().all()
 
-        logging.info(f"📊 Знайдено {len(exchanges)} бірж у таблиці exchanges")
+        log.info(f"📊 Found {len(exchanges)} exchanges")
 
         for ex in exchanges:
-            logging.info(f"➡️ Обробка біржі {ex.code} ({ex.name})")
+            log.info(f"➡️ Processing exchange {ex.code} ({ex.name})")
 
             client = await get_exchange_client(session, ex)
             if not client:
-                logging.warning(f"⚠️ Пропускаю {ex.code}, немає клієнта")
+                log.warning(f"⚠️ Skipping {ex.code}, no client")
                 continue
 
             module = universal_fetcher
@@ -37,10 +38,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     id=f"symbols_{ex.code}_{ex.id}",
                     replace_existing=True,
                 )
-                logging.info(
-                    f"🕑 Додав job symbols для {ex.code} "
-                    f"(кожні {ex.fetch_symbols_interval_min} хв)"
-                )
+                log.info(f"🕑 Added job symbols for {ex.code} ({ex.fetch_symbols_interval_min}m)")
 
             # ---- limits ----
             if hasattr(module, "refresh_limits"):
@@ -52,10 +50,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     id=f"limits_{ex.code}_{ex.id}",
                     replace_existing=True,
                 )
-                logging.info(
-                    f"🕑 Додав job limits для {ex.code} "
-                    f"(кожні {ex.fetch_limits_interval_min} хв)"
-                )
+                log.info(f"🕑 Added job limits for {ex.code} ({ex.fetch_limits_interval_min}m)")
 
             # ---- fees ----
             if hasattr(module, "refresh_fees"):
@@ -67,19 +62,17 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     id=f"fees_{ex.code}_{ex.id}",
                     replace_existing=True,
                 )
-                logging.info(
-                    f"🕑 Додав job fees для {ex.code} "
-                    f"(кожні {ex.fetch_fees_interval_min} хв)"
-                )
+                log.info(f"🕑 Added job fees for {ex.code} ({ex.fetch_fees_interval_min}m)")
 
-    logging.info("✅ Завантаження jobs завершено")
+    log.info("✅ Jobs loaded")
 
 
 def start_scheduler():
-    logging.info("🟢 Стартую AsyncIOScheduler")
+    log.info("🟢 Starting AsyncIOScheduler")
     scheduler = AsyncIOScheduler()
-    loop = asyncio.get_event_loop()
-    loop.create_task(load_jobs(scheduler))
+
+    # Run async job loader inside loop
+    asyncio.create_task(load_jobs(scheduler))
+
     scheduler.start()
-    logging.info("✅ Scheduler запущено")
-    loop.run_forever()
+    log.info("✅ Scheduler started")
