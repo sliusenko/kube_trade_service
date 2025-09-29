@@ -108,8 +108,11 @@ class ExchangeSymbol(Base):
     __tablename__ = "exchange_symbols"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
+
     exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
+    symbol_id = Column(Text, nullable=False)
     symbol = Column(Text, nullable=False)
+
     base_asset = Column(Text, nullable=False)
     quote_asset = Column(Text, nullable=False)
     status = Column(Text)
@@ -131,6 +134,10 @@ class ExchangeSymbol(Base):
 
     exchange = relationship("Exchange", back_populates="symbols")
     fees = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "symbol_id", name="uq_exchange_symbol"),
+    )
 class ExchangeFee(Base):
     __tablename__ = "exchange_fees"
 
