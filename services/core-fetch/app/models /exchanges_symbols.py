@@ -4,8 +4,6 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB, BIGINT
 from sqlalchemy.sql import text
 from sqlalchemy.orm import declarative_base, relationship
 
-Base = declarative_base()
-
 class Exchange(Base):
     __tablename__ = "exchanges"
     id = Column(UUID(as_uuid=True), primary_key=True)
