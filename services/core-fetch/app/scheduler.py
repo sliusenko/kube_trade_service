@@ -6,7 +6,7 @@ from app.services import universal_fetcher
 from app.services.fetch_price import fetch_and_store_price
 from common.deps.session import SessionLocal
 from common.models.exchanges_symbols import Exchange, ExchangeSymbol
-from app.deps.clients import get_exchange_client
+from common.deps.clients import get_exchange_client
 from common.deps.config import settings
 
 log = logging.getLogger(__name__)
