@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.routers import news
 from app.services import news_service
-from app.deps.db import async_session_maker, init_db
+from app.deps.db import async_session_maker
 
 log = logging.getLogger(__name__)
 
@@ -23,9 +23,6 @@ app.include_router(news.router)
 @app.on_event("startup")
 async def startup_event():
     log.info("🚀 Starting core-news service")
-
-    # Ensure tables exist
-    await init_db()
 
     scheduler = AsyncIOScheduler()
 
