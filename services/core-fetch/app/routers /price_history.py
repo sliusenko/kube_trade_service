@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models.price_history import PriceHistory
-from app.schemas.price_history import PriceHistoryInDB, PriceHistoryCreate
+from common.models.price_history import PriceHistory
+from common.schemas.price_history import PriceHistoryInDB, PriceHistoryCreate
 from app.deps.db import get_session
 
 router = APIRouter(prefix="/price-history", tags=["price-history"])
