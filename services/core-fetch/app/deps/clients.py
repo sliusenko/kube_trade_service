@@ -2,7 +2,7 @@ import logging
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from core_fetch.db.models import Exchange, ExchangeCredential
+from app.models.exchanges_symbols import Exchange, ExchangeCredential
 
 
 async def get_exchange_client(session: AsyncSession, exchange: Exchange):
