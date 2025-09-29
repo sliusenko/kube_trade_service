@@ -1,4 +1,3 @@
-# app/main.py
 import os
 import logging
 from fastapi import FastAPI
@@ -6,7 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.routers import news
 from app.services import news_service
-from app.deps.db import async_session_maker
+from common.deps.db import AsyncSessionLocal 
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +27,12 @@ async def startup_event():
 
     # Job: fetch and store latest news
     async def job_check_news():
-        async with async_session_maker() as session:
+        async with AsyncSessionLocal() as session:
             await news_service.check_news_and_halt_trading(session)
 
     # Job: update price_before/after for saved news
     async def job_update_prices():
-        async with async_session_maker() as session:
+        async with AsyncSessionLocal() as session:
             await news_service.update_news_prices(session)
 
     # Add jobs to scheduler
