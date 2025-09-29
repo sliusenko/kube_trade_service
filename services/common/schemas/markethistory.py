@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from sqlalchemy import Column, BigInteger, Text, Numeric, TIMESTAMP, text
+from common.models.base import Base
 
 class PriceHistoryBase(BaseModel):
     timestamp: datetime

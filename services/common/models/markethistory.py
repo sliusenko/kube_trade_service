@@ -8,7 +8,12 @@ class PriceHistory(Base):
     exchange = Column(Text, nullable=False)
     symbol   = Column(Text, nullable=False)
     price    = Column(Numeric, nullable=False)
-    timestamp = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))]
+    timestamp = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()")
+    )
+
 
 class NewsSentiment(Base):
     __tablename__ = "news_sentiment"

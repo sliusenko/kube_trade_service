@@ -2,15 +2,15 @@ from fastapi import FastAPI
 #from app import models
 # from app.models.base import Base
 # from app.deps.db import engine
-from app.routers import (
+from core_admin.app.routers import (
     users, roles, permissions,
     role_permissions, scheduler, exchanges
 )
 
 app = FastAPI(title="Admin-core API")
 
-@app.on_event("startup")
-async def startup_event():
+# @app.on_event("startup")
+# async def startup_event():
 
     # async with engine.begin() as conn:
     #     print(Base.metadata.tables.keys())
@@ -25,4 +25,4 @@ app.include_router(exchanges.router)
 
 @app.get("/")
 async def root():
-    return {"message": "core-admin API running"}
+    return {"message": "core_admin API running"}
