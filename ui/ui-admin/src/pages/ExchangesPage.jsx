@@ -18,6 +18,7 @@ import {
 import {
   getExchangeSymbols,
   getExchangeLimits,
+  getExchangeFees,
   getExchangeHistory,
 } from "../api/exchange_service_tb";
 import {
