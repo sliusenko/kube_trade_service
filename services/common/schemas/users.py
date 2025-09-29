@@ -70,3 +70,17 @@ class RoleUpdate(BaseModel):
 class RoleOut(RoleBase):
     class Config:
         from_attributes = True
+        
+# -----------------------------
+# Role_Permission
+# -----------------------------
+class RolePermissionBase(BaseModel):
+    role_name: str
+    permission_name: str
+
+class RolePermissionCreate(RolePermissionBase):
+    pass
+
+class RolePermissionOut(RolePermissionBase):
+    class Config:
+        from_attributes = True
