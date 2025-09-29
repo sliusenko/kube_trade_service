@@ -198,8 +198,8 @@ async def refresh_limits(client, exchange_id):
 
 async def refresh_fees(client, exchange_id):
     logging.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
-
     fees_to_insert = []
+
     try:
         if client["exchange_code"].upper() == "BINANCE":
             url = "/api/v3/account"
@@ -221,21 +221,31 @@ async def refresh_fees(client, exchange_id):
             resp = await client["http"].get(url)
             data = resp.json()
 
-            for key, s in data.get("result", {}).items():
-                fees = s.get("fees", [])
-                fees_maker = s.get("fees_maker", [])
+            async with SessionLocal() as session:
+                for key, s in data.get("result", {}).items():
+                    # 🔎 lookup symbol.id по symbol_id (Kraken key)
+                    symbol_obj = await session.execute(
+                        select(ExchangeSymbol.id).where(
+                            ExchangeSymbol.exchange_id == exchange_id,
+                            ExchangeSymbol.symbol_id == key
+                        )
+                    )
+                    symbol_id_db = symbol_obj.scalar_one_or_none()
 
-                for idx, level in enumerate(fees):
-                    volume, taker = level
-                    maker = fees_maker[idx][1] if idx < len(fees_maker) else None
+                    fees = s.get("fees", [])
+                    fees_maker = s.get("fees_maker", [])
 
-                    fees_to_insert.append(dict(
-                        exchange_id=exchange_id,
-                        symbol_id=None,  # 👈 TODO: зробити lookup по ExchangeSymbol.symbol_id == key
-                        volume_threshold=Decimal(volume),
-                        maker_fee=Decimal(maker) if maker is not None else None,
-                        taker_fee=Decimal(taker),
-                    ))
+                    for idx, level in enumerate(fees):
+                        volume, taker = level
+                        maker = fees_maker[idx][1] if idx < len(fees_maker) else None
+
+                        fees_to_insert.append(dict(
+                            exchange_id=exchange_id,
+                            symbol_id=symbol_id_db,  # 👈 підставили правильний FK
+                            volume_threshold=Decimal(volume),
+                            maker_fee=Decimal(maker) if maker is not None else None,
+                            taker_fee=Decimal(taker),
+                        ))
 
         async with SessionLocal() as session:
             for fee in fees_to_insert:
