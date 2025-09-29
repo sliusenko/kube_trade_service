@@ -16,6 +16,12 @@ export const getExchangeLimits = async (exchangeId) => {
   return res.data;
 };
 
+// Fees
+export const getExchangeLimits = async (exchangeId) => {
+  const res = await apiClient.get(`/exchanges/${exchangeId}/fees`);
+  return res.data;
+};
+
 // History
 export const getExchangeHistory = async (exchangeId) => {
   const res = await apiClient.get(`/exchanges/${exchangeId}/history`);
