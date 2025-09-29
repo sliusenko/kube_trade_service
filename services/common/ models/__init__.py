@@ -4,7 +4,6 @@ from .exchanges import (
     ExchangeFee, ExchangeLimit, ExchangeStatusHistory
 )
 from .markethistory import PriceHistory, NewsSentiment
-from .users import NewsSentiment
 
 __all__ = [
     "Base",
