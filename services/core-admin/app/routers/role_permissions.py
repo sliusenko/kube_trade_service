@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from app.deps.db import get_session
+from common.deps.db import get_session
 from common.models.auth import Role, RolePermission, Permission
 from common.schemas.role_permissions import RolePermissionCreate, RolePermissionOut
 
