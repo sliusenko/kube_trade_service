@@ -4,9 +4,8 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import select
-from common.models.news_sentiment import NewsSentiment
-from common.models.price_history import PriceHistory
-from common.schemas.news_sentiment import NewsSentimentCreate
+from common.models.markethistory import NewsSentiment, PriceHistory
+from common.schemas.markethistory import NewsSentimentCreate
 from common.deps.db import get_session
 from common.deps.config import AUTH_CRYPTONEW_TOKEN
 
