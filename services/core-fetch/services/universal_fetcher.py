@@ -2,6 +2,7 @@ import logging
 import requests
 from decimal import Decimal
 from sqlalchemy import delete, update, func
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
 from core_fetch.db.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory, ExchangeFee
 from core_fetch.db.session import SessionLocal
@@ -17,24 +18,17 @@ async def refresh_symbols(client, exchange_id):
         # ---- Binance ----
         if client["exchange_code"].upper() == "BINANCE":
             url = "/api/v3/exchangeInfo"
-            logging.debug(f"📡 Запит до {client['exchange_code']} {url}")
             resp = await client["http"].get(url)
-            logging.debug(f"📥 Відповідь {client['exchange_code']} статус={resp.status_code}")
             data = resp.json()
-
-            logging.debug(f"📊 Отримано {len(data.get('symbols', []))} symbols від {client['exchange_code']}")
 
             for s in data.get("symbols", []):
                 if s["status"] != "TRADING":
-                    logging.debug(f"⏭️ Пропускаю {s['symbol']} (status={s['status']})")
                     continue
 
                 filters = {f["filterType"]: f for f in s.get("filters", [])}
 
-                # ---- min_notional / max_notional ----
                 min_notional = None
                 max_notional = None
-
                 if "MIN_NOTIONAL" in filters:
                     min_notional = filters["MIN_NOTIONAL"].get("minNotional")
                 elif "NOTIONAL" in filters:
@@ -43,7 +37,8 @@ async def refresh_symbols(client, exchange_id):
 
                 symbols.append(dict(
                     exchange_id=exchange_id,
-                    symbol=s["symbol"],
+                    symbol_id=s["symbol"],       # 👈 унікальний ключ від біржі
+                    symbol=f"{s['baseAsset']}/{s['quoteAsset']}",
                     base_asset=s["baseAsset"],
                     quote_asset=s["quoteAsset"],
                     status=s["status"],
@@ -62,18 +57,10 @@ async def refresh_symbols(client, exchange_id):
         # ---- Kraken ----
         elif client["exchange_code"].upper() == "KRAKEN":
             url = "/0/public/AssetPairs"
-            logging.debug(f"📡 Запит до {client['exchange_code']} {url}")
             resp = await client["http"].get(url)
-            logging.debug(f"📥 Відповідь {client['exchange_code']} статус={resp.status_code}")
             data = resp.json()
 
-            logging.debug(f"📊 Отримано {len(data.get('result', {}))} symbols від {client['exchange_code']}")
-
             for key, s in data.get("result", {}).items():
-                base = s.get("base")
-                quote = s.get("quote")
-
-                # розрахунок кроків для кількості та ціни
                 lot_decimals = int(s.get("lot_decimals", 0))
                 step_size = Decimal(f"1e-{lot_decimals}") if lot_decimals else None
                 min_qty = Decimal(s.get("ordermin")) if s.get("ordermin") else None
@@ -82,9 +69,10 @@ async def refresh_symbols(client, exchange_id):
 
                 symbols.append(dict(
                     exchange_id=exchange_id,
-                    symbol=key,
-                    base_asset=base,
-                    quote_asset=quote,
+                    symbol_id=key,                 # 👈 унікальний ключ Kraken
+                    symbol=s.get("wsname") or s.get("altname") or key,
+                    base_asset=s.get("base"),
+                    quote_asset=s.get("quote"),
                     status="TRADING",
                     type="spot",
                     base_precision=s.get("pair_decimals"),
@@ -102,43 +90,34 @@ async def refresh_symbols(client, exchange_id):
             logging.warning(f"❌ refresh_symbols не реалізовано для {client['exchange_code']}")
             return
 
-        logging.info(f"📝 Підготовлено {len(symbols)} symbols для {client['exchange_code']} (exchange_id={exchange_id})")
-
-        # ---- Запис у базу ----
         async with SessionLocal() as session:
-            logging.debug(f"🗑️ Видаляю старі symbols для exchange_id={exchange_id}")
-            await session.execute(
-                delete(ExchangeSymbol).where(ExchangeSymbol.exchange_id == exchange_id)
-            )
+            for sym in symbols:
+                stmt = insert(ExchangeSymbol).values(**sym).on_conflict_do_update(
+                    index_elements=["exchange_id", "symbol_id"],
+                    set_={**sym, "fetched_at": func.now()}
+                )
+                await session.execute(stmt)
 
-            logging.debug(f"➕ Додаю {len(symbols)} нових symbols у exchange_symbols")
-            if symbols:
-                session.add_all([ExchangeSymbol(**sym) for sym in symbols])
-
-            # оновлюємо last_symbols_refresh_at + last_filters_refresh_at
             await session.execute(
-                update(Exchange)
-                .where(Exchange.id == exchange_id)
-                .values(
+                update(Exchange).where(Exchange.id == exchange_id).values(
                     last_symbols_refresh_at=func.now(),
                     last_filters_refresh_at=func.now()
                 )
             )
 
-            # додаємо запис в ExchangeStatusHistory
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
                 event="symbols_refresh",
                 status="ok",
-                message=f"{len(symbols)} symbols збережено"
+                message=f"{len(symbols)} symbols оновлено/додано"
             ))
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(symbols)} symbols збережено для {client['exchange_code']}")
+        logging.info(f"✅ [DONE] {len(symbols)} symbols оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_symbols error for {client['exchange_code']}: {e}")
+        logging.exception(f"❌ refresh_symbols error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
@@ -154,78 +133,60 @@ async def refresh_symbols(client, exchange_id):
 async def refresh_limits(client, exchange_id):
     logging.info(f"🔄 [START] refresh_limits for {client['exchange_code']}")
 
+    limits = []
     try:
-        limits = []
-
-        # ---- Binance ----
         if client["exchange_code"].upper() == "BINANCE":
             url = "/api/v3/exchangeInfo"
-            logging.debug(f"📡 Запит до {client['exchange_code']} {url}")
             resp = await client["http"].get(url)
-            logging.debug(f"📥 Відповідь {client['exchange_code']} статус={resp.status_code}")
             data = resp.json()
 
             for rl in data.get("rateLimits", []):
                 limits.append(dict(
                     exchange_id=exchange_id,
-                    limit_type=rl["rateLimitType"],     # REQUEST_WEIGHT, ORDERS
-                    interval_unit=rl["interval"],       # SECOND, MINUTE, DAY
-                    interval_num=rl["intervalNum"],     # 1, 60, 86400
+                    limit_type=rl["rateLimitType"],
+                    interval_unit=rl["interval"],
+                    interval_num=rl["intervalNum"],
                     limit=rl["limit"],
                     raw_json=rl,
                 ))
 
-        # ---- Kraken ----
         elif client["exchange_code"].upper() == "KRAKEN":
-            # Kraken має просту систему лімітів: https://support.kraken.com/hc/en-us/articles/360022635592
-            # Їх треба хардкодити або фетчити з довідки, бо через API не віддає
             limits.append(dict(
                 exchange_id=exchange_id,
                 limit_type="REQUEST_WEIGHT",
                 interval_unit="SECOND",
                 interval_num=1,
-                limit=15,   # приклад: 15 запитів на 3 секунди (можна нормалізувати)
-                raw_json={"docs": "https://support.kraken.com/hc/en-us/articles/360022635592"}
+                limit=15,
+                raw_json={"docs": "https://support.kraken.com/..."}
             ))
 
-        else:
-            logging.warning(f"❌ refresh_limits не реалізовано для {client['exchange_code']}")
-            return
-
-        logging.info(f"📝 Підготовлено {len(limits)} limits для {client['exchange_code']} (exchange_id={exchange_id})")
-
-        # ---- Запис у базу ----
         async with SessionLocal() as session:
-            logging.debug(f"🗑️ Видаляю старі limits для exchange_id={exchange_id}")
+            for lim in limits:
+                stmt = insert(ExchangeLimit).values(**lim).on_conflict_do_update(
+                    index_elements=["exchange_id", "limit_type", "interval_unit", "interval_num"],
+                    set_={**lim, "fetched_at": func.now()}
+                )
+                await session.execute(stmt)
+
             await session.execute(
-                delete(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
+                update(Exchange).where(Exchange.id == exchange_id).values(
+                    last_limits_refresh_at=func.now()
+                )
             )
 
-            logging.debug(f"➕ Додаю {len(limits)} нових limits у exchange_limits")
-            if limits:
-                session.add_all([ExchangeLimit(**lim) for lim in limits])
-
-            # оновлюємо last_limits_refresh_at
-            await session.execute(
-                update(Exchange)
-                .where(Exchange.id == exchange_id)
-                .values(last_limits_refresh_at=func.now())
-            )
-
-            # додаємо запис в ExchangeStatusHistory
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
                 event="limits_refresh",
                 status="ok",
-                message=f"{len(limits)} limits збережено"
+                message=f"{len(limits)} limits оновлено/додано"
             ))
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(limits)} limits збережено для {client['exchange_code']}")
+        logging.info(f"✅ [DONE] {len(limits)} limits оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_limits error for {client['exchange_code']}: {e}")
+        logging.exception(f"❌ refresh_limits error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
@@ -237,10 +198,9 @@ async def refresh_limits(client, exchange_id):
 
 async def refresh_fees(client, exchange_id):
     logging.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
-    fees_to_insert = []
 
+    fees_to_insert = []
     try:
-        # ---- Binance ----
         if client["exchange_code"].upper() == "BINANCE":
             url = "/api/v3/account"
             resp = await client["http"].get(url)
@@ -256,7 +216,6 @@ async def refresh_fees(client, exchange_id):
                 taker_fee=taker,
             ))
 
-        # ---- Kraken ----
         elif client["exchange_code"].upper() == "KRAKEN":
             url = "/0/public/AssetPairs"
             resp = await client["http"].get(url)
@@ -266,51 +225,45 @@ async def refresh_fees(client, exchange_id):
                 fees = s.get("fees", [])
                 fees_maker = s.get("fees_maker", [])
 
-                # fees = [[volume, taker%], ...]
-                # fees_maker = [[volume, maker%], ...]
                 for idx, level in enumerate(fees):
                     volume, taker = level
                     maker = fees_maker[idx][1] if idx < len(fees_maker) else None
 
                     fees_to_insert.append(dict(
                         exchange_id=exchange_id,
-                        symbol_id=None,   # тут можна підставити id символу, якщо робиш lookup по key
+                        symbol_id=None,  # 👈 TODO: зробити lookup по ExchangeSymbol.symbol_id == key
                         volume_threshold=Decimal(volume),
                         maker_fee=Decimal(maker) if maker is not None else None,
                         taker_fee=Decimal(taker),
                     ))
 
-        else:
-            logging.warning(f"❌ refresh_fees не реалізовано для {client['exchange_code']}")
-            return
-
-        # ---- Запис у базу ----
         async with SessionLocal() as session:
-            logging.debug(f"🗑️ Видаляю старі fees для exchange_id={exchange_id}")
-            await session.execute(delete(ExchangeFee).where(ExchangeFee.exchange_id == exchange_id))
-
-            if fees_to_insert:
-                session.add_all([ExchangeFee(**f) for f in fees_to_insert])
+            for fee in fees_to_insert:
+                stmt = insert(ExchangeFee).values(**fee).on_conflict_do_update(
+                    index_elements=["exchange_id", "symbol_id", "volume_threshold"],
+                    set_={**fee, "fetched_at": func.now()}
+                )
+                await session.execute(stmt)
 
             await session.execute(
-                update(Exchange)
-                .where(Exchange.id == exchange_id)
-                .values(last_fees_refresh_at=func.now())
+                update(Exchange).where(Exchange.id == exchange_id).values(
+                    last_fees_refresh_at=func.now()
+                )
             )
 
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
                 event="fees_refresh",
                 status="ok",
-                message=f"{len(fees_to_insert)} fees збережено"
+                message=f"{len(fees_to_insert)} fees оновлено/додано"
             ))
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(fees_to_insert)} fees збережено для {client['exchange_code']}")
+        logging.info(f"✅ [DONE] {len(fees_to_insert)} fees оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_fees error for {client['exchange_code']}: {e}")
+        logging.exception(f"❌ refresh_fees error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
