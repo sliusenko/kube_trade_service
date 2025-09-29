@@ -4,8 +4,8 @@ from sqlalchemy import select, delete
 from typing import List
 
 from app.deps.db import get_session
-from app.models.scheduler import ApschedulerJob
-from app.schemas.scheduler import JobOut
+from common.models.scheduler import ApschedulerJob
+from common.schemas.scheduler import JobOut
 
 router = APIRouter(prefix="/scheduler", tags=["Scheduler"])
 
