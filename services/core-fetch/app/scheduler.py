@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.services import universal_fetcher
 from app.services.fetch_price import fetch_and_store_price
 from app.deps.session import SessionLocal
-from app.models.exchanges_symbols import Exchange, ExchangeSymbol
+from common.models.exchanges_symbols import Exchange, ExchangeSymbol
 from app.deps.clients import get_exchange_client
 from app.deps.config import settings
 
