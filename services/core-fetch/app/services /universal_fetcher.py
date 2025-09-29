@@ -17,11 +17,11 @@ log = logging.getLogger(__name__)
 
 async def fetch_and_store_price(exchange: str, symbol: str):
     """
-    Fetch latest price for a given symbol from exchange and store in DB.
+    Fetch latest price for a given symbol from an exchange and store in DB.
     Currently supports Binance and Kraken.
     """
     try:
-        price = None
+        price: float | None = None
 
         # ---- Binance ----
         if exchange.upper() == "BINANCE":
@@ -47,11 +47,11 @@ async def fetch_and_store_price(exchange: str, symbol: str):
                 price = float(ticker["c"][0])  # last trade price
 
         else:
-            log.warning(f"❌ fetch_and_store_price not implemented for {exchange}")
+            logger.warning(f"❌ fetch_and_store_price not implemented for {exchange}")
             return
 
         if price is None:
-            log.warning(f"⚠️ No price received for {exchange}:{symbol}")
+            logger.warning(f"⚠️ No price received for {exchange}:{symbol}")
             return
 
         # ---- Save to DB ----
@@ -64,11 +64,12 @@ async def fetch_and_store_price(exchange: str, symbol: str):
             )
             session.add(record)
             await session.commit()
+            await session.refresh(record)
 
-        log.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
+        logger.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
 
     except Exception as e:
-        log.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
+        logger.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
 
 async def refresh_symbols(client, exchange_id):
     logging.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
