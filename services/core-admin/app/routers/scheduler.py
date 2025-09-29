@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from typing import List
 
-from app.deps.db import get_session
+from common.deps.db import get_session
 from common.models.scheduler import ApschedulerJob
 from common.schemas.scheduler import JobOut
 
