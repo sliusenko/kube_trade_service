@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List
 
 from common.deps.db import get_session
-from common.models.auth import Role
+from common.models.users import Role
 from common.schemas.users import RoleCreate, RoleUpdate, RoleOut
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
