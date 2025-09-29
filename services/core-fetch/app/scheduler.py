@@ -9,6 +9,8 @@ from app.models.exchanges_symbols import Exchange
 from app.deps.clients import get_exchange_client
 
 log = logging.getLogger(__name__)
+# Make scheduler global
+scheduler = AsyncIOScheduler()
 
 async def load_jobs(scheduler: AsyncIOScheduler):
     async with SessionLocal() as session:
@@ -71,7 +73,6 @@ async def load_jobs(scheduler: AsyncIOScheduler):
 
 def start_scheduler():
     log.info("🟢 Starting AsyncIOScheduler")
-    scheduler = AsyncIOScheduler()
     asyncio.create_task(load_jobs(scheduler))
     scheduler.start()
     log.info("✅ Scheduler started")
