@@ -223,7 +223,9 @@ async def refresh_fees(client, exchange_id):
 
             async with SessionLocal() as session:
                 for key, s in data.get("result", {}).items():
-                    # 🔎 lookup symbol.id по symbol_id (Kraken key)
+                    # -------------------
+                    # 🔎 Lookup символу
+                    # -------------------
                     symbol_obj = await session.execute(
                         select(ExchangeSymbol.id).where(
                             ExchangeSymbol.exchange_id == exchange_id,
@@ -232,6 +234,44 @@ async def refresh_fees(client, exchange_id):
                     )
                     symbol_id_db = symbol_obj.scalar_one_or_none()
 
+                    if not symbol_id_db:
+                        # Якщо символу немає → створюємо його одразу
+                        lot_decimals = int(s.get("lot_decimals", 0))
+                        step_size = Decimal(f"1e-{lot_decimals}") if lot_decimals else None
+                        min_qty = Decimal(s.get("ordermin")) if s.get("ordermin") else None
+                        pair_decimals = int(s.get("pair_decimals", lot_decimals))
+                        tick_size = Decimal(f"1e-{pair_decimals}") if pair_decimals else None
+
+                        new_symbol = dict(
+                            exchange_id=exchange_id,
+                            symbol_id=key,
+                            symbol=s.get("wsname") or s.get("altname") or key,
+                            base_asset=s.get("base"),
+                            quote_asset=s.get("quote"),
+                            status="TRADING",
+                            type="spot",
+                            base_precision=s.get("pair_decimals"),
+                            quote_precision=s.get("lot_decimals"),
+                            step_size=str(step_size) if step_size else None,
+                            tick_size=str(tick_size) if tick_size else None,
+                            min_qty=str(min_qty) if min_qty else None,
+                            max_qty=None,
+                            min_notional=None,
+                            max_notional=None,
+                            filters=s,
+                        )
+
+                        stmt = insert(ExchangeSymbol).values(**new_symbol).on_conflict_do_update(
+                            index_elements=["exchange_id", "symbol_id"],
+                            set_={**new_symbol, "fetched_at": func.now()}
+                        ).returning(ExchangeSymbol.id)
+
+                        result = await session.execute(stmt)
+                        symbol_id_db = result.scalar_one()
+
+                    # -------------------
+                    # Fees
+                    # -------------------
                     fees = s.get("fees", [])
                     fees_maker = s.get("fees_maker", [])
 
@@ -241,12 +281,15 @@ async def refresh_fees(client, exchange_id):
 
                         fees_to_insert.append(dict(
                             exchange_id=exchange_id,
-                            symbol_id=symbol_id_db,  # 👈 підставили правильний FK
+                            symbol_id=symbol_id_db,
                             volume_threshold=Decimal(volume),
                             maker_fee=Decimal(maker) if maker is not None else None,
                             taker_fee=Decimal(taker),
                         ))
 
+        # -------------------
+        # Запис у базу
+        # -------------------
         async with SessionLocal() as session:
             for fee in fees_to_insert:
                 stmt = insert(ExchangeFee).values(**fee).on_conflict_do_update(
