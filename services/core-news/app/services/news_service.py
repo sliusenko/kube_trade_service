@@ -3,11 +3,12 @@ import requests
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-
+from sqlalchemy import select
 from app.models.news_sentiment import NewsSentiment
 from app.schemas.news_sentiment import NewsSentimentCreate
 from app.deps.db import get_session
 from app.config import AUTH_CRYPTONEW_TOKEN
+from app.models.price_history import PriceHistory
 
 log = logging.getLogger(__name__)
 
@@ -115,8 +116,42 @@ async def check_news_and_halt_trading(session: AsyncSession):
 
 
 async def update_news_prices(session: AsyncSession):
-    """
-    Placeholder for price update logic.
-    Will query analysis_data and update price_before/after fields.
-    """
-    log.info("🔄 [stub] Updating news prices (to be implemented)")
+    result = await session.execute(select(NewsSentiment).where(NewsSentiment.price_before == None))
+    news_items = result.scalars().all()
+
+    for news in news_items:
+        # беремо найближчу ціну з price_history
+        price_before = await get_price_at(session, news.symbol, news.published_at, 0)
+        price_1h = await get_price_at(session, news.symbol, news.published_at, 60)
+        price_6h = await get_price_at(session, news.symbol, news.published_at, 360)
+        price_24h = await get_price_at(session, news.symbol, news.published_at, 1440)
+
+        news.price_before = price_before
+        news.price_after_1h = price_1h
+        news.price_after_6h = price_6h
+        news.price_after_24h = price_24h
+
+        if price_before and price_1h:
+            news.price_change_1h = round(100 * (price_1h - price_before) / price_before, 2)
+
+        if price_before and price_6h:
+            news.price_change_6h = round(100 * (price_6h - price_before) / price_before, 2)
+
+        if price_before and price_24h:
+            news.price_change_24h = round(100 * (price_24h - price_before) / price_before, 2)
+
+    await session.commit()
+
+
+async def get_price_at(session: AsyncSession, symbol: str, ts, offset_minutes: int):
+    from datetime import timedelta
+    target = ts + timedelta(minutes=offset_minutes)
+
+    result = await session.execute(
+        select(PriceHistory.price)
+        .where(PriceHistory.symbol == symbol)
+        .where(PriceHistory.timestamp.between(target - timedelta(minutes=5), target + timedelta(minutes=5)))
+        .order_by(func.abs(func.extract("epoch", PriceHistory.timestamp - target)))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
