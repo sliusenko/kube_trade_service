@@ -1,43 +1,44 @@
 from logging.config import fileConfig
-from alembic import context
 from sqlalchemy import engine_from_config, pool
-from core_fetch.db.models import Base  # 👈 імпорт твоїх моделей (Exchange, ExchangeSymbol, тощо)
+from alembic import context
 
-# Конфіг із alembic.ini
-config = context.config
-fileConfig(config.config_file_name)
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../services"))
 
-# Метадані з твоїх моделей
-target_metadata = Base.metadata
+# імпортуємо Base з усіх сервісів
+from core_admin.app.models import Base as AdminBase
+from core_fetch.app.models.exchanges_symbols import Base as FetchBase
+from core_fetch.app.models.price_history import Base as PriceBase
+from core_news.app.models.news_sentiment import Base as NewsBase
 
+# об’єднуємо metadata
+target_metadata = [
+    AdminBase.metadata,
+    FetchBase.metadata,
+    PriceBase.metadata,
+    NewsBase.metadata,
+]
 
 def run_migrations_offline():
-    """Запуск у офлайн-режимі (генерація SQL без виконання)."""
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=os.getenv("DATABASE_URL"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online():
-    """Запуск у онлайн-режимі (виконання змін у БД)."""
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        context.config.get_section(context.config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
-
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()
