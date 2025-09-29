@@ -6,7 +6,7 @@ from typing import List
 from uuid import UUID
 import uuid
 
-from app.deps.db import get_session
+from common.deps.db import get_session
 from common.models.auth import User
 from common.schemas.users import UserCreate, UserUpdate, UserOut
 
