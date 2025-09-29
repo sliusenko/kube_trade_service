@@ -4,10 +4,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from app.services import universal_fetcher
 from app.services.fetch_price import fetch_and_store_price
-from app.deps.session import SessionLocal
+from common.deps.session import SessionLocal
 from common.models.exchanges_symbols import Exchange, ExchangeSymbol
 from app.deps.clients import get_exchange_client
-from app.deps.config import settings
+from common.deps.config import settings
 
 log = logging.getLogger(__name__)
 
