@@ -24,10 +24,3 @@ async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit
 async def get_session() -> AsyncSession:
     async with async_session_maker() as session:
         yield session
-
-async def init_db():
-    # Import models here to register them with Base
-    from app.models.news_sentiment import NewsSentiment
-    from app.models.price_history import PriceHistory
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
