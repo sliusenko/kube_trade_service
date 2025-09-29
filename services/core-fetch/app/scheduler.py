@@ -1,14 +1,16 @@
 import asyncio
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import select
 from app.services import universal_fetcher
 from app.services.fetch_price import fetch_and_store_price
 from app.deps.session import SessionLocal
-from sqlalchemy import select
-from app.models.exchanges_symbols import Exchange
+from app.models.exchanges_symbols import Exchange, ExchangeSymbol
 from app.deps.clients import get_exchange_client
+from app.deps.config import settings
 
 log = logging.getLogger(__name__)
+
 # Make scheduler global
 scheduler = AsyncIOScheduler()
 
@@ -58,16 +60,28 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     replace_existing=True,
                 )
 
-            # ---- prices ---- (новий job)
-            if hasattr(ex, "fetch_prices_interval_min"):
-                scheduler.add_job(
-                    fetch_and_store_price,
-                    "interval",
-                    minutes=ex.fetch_prices_interval_min,
-                    args=[ex.code, "BTCUSDT"],  # TODO: зв'язати з таблицею symbols
-                    id=f"prices_{ex.code}_{ex.id}",
-                    replace_existing=True,
-                )
+        # ---- prices (global) ----
+        res = await session.execute(
+            select(Exchange.code, ExchangeSymbol.symbol_id)
+            .join(Exchange, Exchange.id == ExchangeSymbol.exchange_id)
+            .where(ExchangeSymbol.status == "TRADING")
+        )
+        symbols = res.all()
+
+        for exchange_code, symbol_id in symbols:
+            scheduler.add_job(
+                fetch_and_store_price,
+                "interval",
+                minutes=settings.FETCH_PRICE_INTERVAL_MIN,
+                args=[exchange_code, symbol_id],
+                id=f"price_{exchange_code.lower()}_{symbol_id.lower()}",
+                replace_existing=True,
+            )
+
+        log.info(
+            f"🕑 Added {len(symbols)} price jobs "
+            f"(every {settings.FETCH_PRICE_INTERVAL_MIN}m)"
+        )
 
     log.info("✅ Jobs loaded")
 
