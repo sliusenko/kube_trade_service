@@ -6,8 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Копіюємо код сервісу
 COPY ./app ./app
 
-CMD ["python", "-m", "core_fetch.main"]
-
+# Run FastAPI with uvicorn
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
