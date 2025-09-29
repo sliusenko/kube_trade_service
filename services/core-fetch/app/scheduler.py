@@ -23,7 +23,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 log.warning(f"⚠️ Skipping {ex.code}, no client")
                 continue
 
-            # Symbols
+            # ---- symbols ----
             if hasattr(universal_fetcher, "refresh_symbols"):
                 scheduler.add_job(
                     universal_fetcher.refresh_symbols,
@@ -34,7 +34,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     replace_existing=True,
                 )
 
-            # Limits
+            # ---- limits ----
             if hasattr(universal_fetcher, "refresh_limits"):
                 scheduler.add_job(
                     universal_fetcher.refresh_limits,
@@ -45,7 +45,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     replace_existing=True,
                 )
 
-            # Fees
+            # ---- fees ----
             if hasattr(universal_fetcher, "refresh_fees"):
                 scheduler.add_job(
                     universal_fetcher.refresh_fees,
@@ -56,15 +56,16 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                     replace_existing=True,
                 )
 
-        # Global job: fetch prices
-        scheduler.add_job(
-            fetch_and_store_price,
-            "interval",
-            minutes=10,   # later make configurable
-            args=["BINANCE", "BTCUSDT"],
-            id="price_binance_btcusdt",
-            replace_existing=True,
-        )
+            # ---- prices ---- (новий job)
+            if hasattr(ex, "fetch_prices_interval_min"):
+                scheduler.add_job(
+                    fetch_and_store_price,
+                    "interval",
+                    minutes=ex.fetch_prices_interval_min,
+                    args=[ex.code, "BTCUSDT"],  # TODO: зв'язати з таблицею symbols
+                    id=f"prices_{ex.code}_{ex.id}",
+                    replace_existing=True,
+                )
 
     log.info("✅ Jobs loaded")
 
