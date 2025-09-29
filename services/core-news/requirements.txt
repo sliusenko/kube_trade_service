@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+requests
+pandas
+matplotlib
+vaderSentiment
+python-telegram-bot==20.3
+apscheduler
