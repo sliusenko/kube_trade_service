@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app import models
+#from app import models
 # from app.models.base import Base
 # from app.deps.db import engine
 from app.routers import (
