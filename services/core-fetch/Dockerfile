@@ -6,7 +6,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY . ./core_fetch
+# Копіюємо код сервісу
+COPY ./app ./app
 
 CMD ["python", "-m", "core_fetch.main"]
 
