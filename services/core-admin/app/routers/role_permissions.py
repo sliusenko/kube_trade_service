@@ -5,8 +5,8 @@ from sqlalchemy import select
 from typing import List
 
 from app.deps.db import get_session
-from app.models.auth import Role, RolePermission, Permission
-from app.schemas.role_permissions import RolePermissionCreate, RolePermissionOut
+from common.models.auth import Role, RolePermission, Permission
+from common.schemas.role_permissions import RolePermissionCreate, RolePermissionOut
 
 router = APIRouter(prefix="/role-permissions", tags=["RolePermissions"])
 
