@@ -7,8 +7,8 @@ from uuid import UUID
 import uuid
 
 from app.deps.db import get_session
-from app.models.auth import User
-from app.schemas.users import UserCreate, UserUpdate, UserOut
+from common.models.auth import User
+from common.schemas.users import UserCreate, UserUpdate, UserOut
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
