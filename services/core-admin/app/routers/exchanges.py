@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.deps.db import get_session
+from common.deps.db import get_session
 from common.models.exchanges import (
     Exchange, ExchangeCredential, ExchangeSymbol,
     ExchangeLimit, ExchangeStatusHistory, ExchangeFee
