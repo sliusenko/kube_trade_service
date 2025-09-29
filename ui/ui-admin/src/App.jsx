@@ -35,6 +35,7 @@ export default function App() {
           <NavLink to="/users" style={navStyle}>Users</NavLink>
           <NavLink to="/exchanges" style={navStyle}>Exchanges</NavLink>
           <NavLink to="/settings" style={navStyle}>Settings</NavLink>
+          <NavLink to="/news" style={navStyle}>news</NavLink>          
         </nav>
       </aside>
 
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/exchanges" element={<ExchangesPage />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/news" element={<Settings />} />
             <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
           </Routes>
         </main>
