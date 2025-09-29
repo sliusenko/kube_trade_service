@@ -50,6 +50,7 @@ export default function ExchangesPage() {
   const [formData, setFormData] = useState({});
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
+  const [limits, setFees] = useState([]);
   const [history, setHistory] = useState([]);
   const [credentials, setCredentials] = useState([]);
 
@@ -63,8 +64,9 @@ export default function ExchangesPage() {
     if (activeTab === "SYMBOLS") {
       getExchangeSymbols(selectedExchange).then(setSymbols);
     }
-    if (activeTab === "LIMITS") {
+    if (activeTab === "LIMITS&FEES") {
       getExchangeLimits(selectedExchange).then(setLimits);
+      getExchangeFees(selectedExchange).then(setFees);
     }
     if (activeTab === "HISTORY") {
       getExchangeHistory(selectedExchange).then(setHistory);
@@ -166,7 +168,7 @@ export default function ExchangesPage() {
 
       {/* Вкладки */}
       <div style={{ marginBottom: "20px" }}>
-        {["EXCHANGES", "CREDENTIALS", "SYMBOLS", "LIMITS", "HISTORY"].map((tab) => (
+        {["EXCHANGES", "CREDENTIALS", "SYMBOLS", "LIMITS&FEES", "HISTORY"].map((tab) => (
           <TabButton
             key={tab}
             label={tab}
@@ -341,32 +343,59 @@ export default function ExchangesPage() {
         </Paper>
       )}
 
-      {/* LIMITS таблиця */}
-      {activeTab === "LIMITS" && (
-        <Paper>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Limit Type</TableCell>
-                <TableCell>Interval Unit</TableCell>
-                <TableCell>Interval Num</TableCell>
-                <TableCell>Limit</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {limits.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell>{l.id}</TableCell>
-                  <TableCell>{l.limit_type}</TableCell>
-                  <TableCell>{l.interval_unit}</TableCell>
-                  <TableCell>{l.interval_num}</TableCell>
-                  <TableCell>{l.limit}</TableCell>
+      {/* LIMITS&FEES таблиці */}
+      {activeTab === "LIMITS&FEES" && (
+        <div>
+          <Paper>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Limit Type</TableCell>
+                  <TableCell>Interval Unit</TableCell>
+                  <TableCell>Interval Num</TableCell>
+                  <TableCell>Limit</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Paper>
+              </TableHead>
+              <TableBody>
+                {limits.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell>{l.id}</TableCell>
+                    <TableCell>{l.limit_type}</TableCell>
+                    <TableCell>{l.interval_unit}</TableCell>
+                    <TableCell>{l.interval_num}</TableCell>
+                    <TableCell>{l.limit}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Paper>
+  
+          {/* FEES */}
+          <Paper>
+            <h3 style={{ padding: "10px" }}>Fees</h3>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Fee Type</TableCell>
+                  <TableCell>Maker</TableCell>
+                  <TableCell>Taker</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {fees.map((f) => (
+                  <TableRow key={f.id}>
+                    <TableCell>{f.id}</TableCell>
+                    <TableCell>{f.fee_type}</TableCell>
+                    <TableCell>{f.maker}</TableCell>
+                    <TableCell>{f.taker}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Paper>
+        </div>
       )}
 
       {/* HISTORY таблиця */}
