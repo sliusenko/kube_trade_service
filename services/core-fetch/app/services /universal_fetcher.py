@@ -5,7 +5,7 @@ from sqlalchemy import delete, update, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
 from common.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory, ExchangeFee
-from common.models.price_history import PriceHistory
+from common.models.markethistory import PriceHistory
 from common.deps.session import SessionLocal
 from binance.client import Client as BinanceClient
 from datetime import datetime, timezone
