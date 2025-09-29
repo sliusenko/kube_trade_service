@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 
 from common.models.price_history import PriceHistory
 from common.schemas.price_history import PriceHistoryInDB, PriceHistoryCreate
-from app.deps.db import get_session
+from common.deps.db import get_session
 
 router = APIRouter(prefix="/price-history", tags=["price-history"])
 
