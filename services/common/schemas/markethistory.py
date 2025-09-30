@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
@@ -19,35 +19,15 @@ class PriceHistoryOut(PriceHistoryBase):
     timestamp: datetime
 class NewsSentimentBase(BaseModel):
     published_at: datetime
-    title: str
+    title: str = Field(..., min_length=3, max_length=500)
     summary: Optional[str] = None
-    sentiment: Optional[float] = None
+    sentiment: Optional[Decimal] = Field(None, ge=-1, le=1)  
     source: Optional[str] = None
-    pair: Optional[str] = None
-    url: Optional[str] = None
-
+    symbol: Optional[str] = None
+    url: Optional[HttpUrl] = None
 class NewsSentimentCreate(NewsSentimentBase):
     pass
+class NewsSentimentOut(NewsSentimentBase):
+    model_config = ConfigDict(from_attributes=True)
 
-class NewsSentimentUpdate(BaseModel):
-    sentiment: Optional[float] = None
-    price_before: Optional[float] = None
-    price_after_1h: Optional[float] = None
-    price_after_6h: Optional[float] = None
-    price_after_24h: Optional[float] = None
-    price_change_1h: Optional[float] = None
-    price_change_6h: Optional[float] = None
-    price_change_24h: Optional[float] = None
-
-class NewsSentimentInDB(NewsSentimentBase):
     id: int
-    price_before: Optional[float] = None
-    price_after_1h: Optional[float] = None
-    price_after_6h: Optional[float] = None
-    price_after_24h: Optional[float] = None
-    price_change_1h: Optional[float] = None
-    price_change_6h: Optional[float] = None
-    price_change_24h: Optional[float] = None
-
-    class Config:
-        orm_mode = True
