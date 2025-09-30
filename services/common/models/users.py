@@ -1,12 +1,12 @@
 # app/models/user.py
 import uuid
 import datetime as dt
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import Text, String, Boolean, TIMESTAMP, ForeignKey, func, text, Index
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.db.base import Base  # ваш Declarative Base
+from common.db.base import Base  # ваш Declarative Base
 
 
 class User(Base):
@@ -42,15 +42,24 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User {self.user_id} {self.username}>"
-
 class Role(Base):
     __tablename__ = "roles"
 
-    name = Column(Text, primary_key=True)
-    description = Column(Text)
+    name: Mapped[str] = mapped_column(Text, primary_key=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    users = relationship("User", back_populates="role_obj", cascade="all, delete")
-    permissions = relationship("RolePermission", back_populates="role")
+    # relationships
+    users: Mapped[List["User"]] = relationship(  # type: ignore[name-defined]
+        back_populates="role_obj",
+        cascade="all, delete",
+    )
+    permissions: Mapped[List["RolePermission"]] = relationship(  # type: ignore[name-defined]
+        back_populates="role",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Role {self.name}>"
+
 class RolePermission(Base):
     __tablename__ = "role_permissions"
 
