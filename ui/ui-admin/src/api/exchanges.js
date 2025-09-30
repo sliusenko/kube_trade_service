@@ -63,9 +63,8 @@ export const deleteExchangeCredential = async (exchangeId, credId) => {
 
 // additional functions
 export async function getExchange(id) {
-  const res = await fetch(`/api/exchanges/${id}`);
-  if (!res.ok) throw new Error("Failed to load exchange");
-  return res.json();
+  const res = await apiClient.get(`/exchanges/${id}`);
+  return res.data;
 }
 
 export async function getExchangeCredential(exchangeId, credentialId) {
