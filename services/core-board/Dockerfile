@@ -8,16 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Встановлення залежностей
-COPY requirements.txt .
+
+COPY services/core_board/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копіюємо код сервісу
-COPY ./app ./app
-COPY ./common ./common
+COPY services/core_board ./core_board
+COPY services/common ./common
 
-# Expose порту
 EXPOSE 8000
 
-# Запуск uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "core_board.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
