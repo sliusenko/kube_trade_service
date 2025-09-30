@@ -71,5 +71,4 @@ class RolePermissionBase(BaseModel):
 class RolePermissionCreate(RolePermissionBase):
     pass
 class RolePermissionOut(RolePermissionBase):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
