@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval
 from sqlalchemy.orm import relationship
-from common.models.base import Base
+from .base import Base
+
 
 class Command(Base):
     __tablename__ = "commands"
@@ -21,7 +22,7 @@ class Timeframe(Base):
     code = Column(String, primary_key=True)  # "1m", "15m", "1h"
     history_limit = Column(Integer)
     min_len = Column(Integer)
-    hours = Column(Numeric)  # e.g. 1/60, 1, 4
+    hours = Column(Numeric)
     lookback = Column(Interval)
 
 
