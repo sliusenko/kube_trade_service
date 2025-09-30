@@ -1,11 +1,13 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { signOut } from "./utils/auth";
-import UsersPage from "./pages/UsersPage";
-import ExchangesPage from "./pages/ExchangesPage";
-import NewsPage from "./pages/NewsPage";
-import PageConfig from "./pages/PageConfig";
 
+// 🔹 Lazy imports
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const UsersPage = lazy(() => import("./pages/UsersPage"));
+const ExchangesPage = lazy(() => import("./pages/ExchangesPage"));
+const NewsPage = lazy(() => import("./pages/NewsPage"));
+const PageConfig = lazy(() => import("./pages/PageConfig"));
 
 const Page = ({ title, children }) => (
   <div className="p-6">
@@ -13,8 +15,6 @@ const Page = ({ title, children }) => (
     <div>{children}</div>
   </div>
 );
-
-const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
 
 const navStyle = ({ isActive }) => ({
   padding: "10px 14px",
@@ -62,17 +62,18 @@ export default function App() {
         </header>
 
         <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/exchanges" element={<ExchangesPage />} />
-            <Route path="/config" element={<PageConfig />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
-          </Routes>
+          <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/exchanges" element={<ExchangesPage />} />
+              <Route path="/config" element={<PageConfig />} />
+              <Route path="/news" element={<NewsPage />} />
+              <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </div>
   );
 }
-
