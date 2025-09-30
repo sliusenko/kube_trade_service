@@ -168,17 +168,24 @@ class ExchangeSymbolOut(ExchangeSymbolBase):
 # -----------------------------
 # ExchangeFee (read-only)
 # -----------------------------
-class ExchangeFeeRead(BaseModel):
-    id: int
-    exchange_id: uuid.UUID
-    symbol_id: Optional[int]
-    volume_threshold: float
-    maker_fee: Optional[float]
-    taker_fee: Optional[float]
-    fetched_at: datetime
+class ExchangeFeeBase(BaseModel):
+    exchange_id: UUID
+    symbol_id: Optional[int] = None
+    volume_threshold: Decimal
+    maker_fee: Optional[Decimal] = None
+    taker_fee: Optional[Decimal] = None
+class ExchangeFeeCreate(ExchangeFeeBase):
+    pass
+class ExchangeFeeUpdate(BaseModel):
+    symbol_id: Optional[int] = None
+    volume_threshold: Optional[Decimal] = None
+    maker_fee: Optional[Decimal] = None
+    taker_fee: Optional[Decimal] = None
+class ExchangeFeeOut(ExchangeFeeBase):
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
+    fetched_at: datetime
 
 # -----------------------------
 # ExchangeLimit (read-only)
