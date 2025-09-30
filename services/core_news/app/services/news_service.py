@@ -94,7 +94,7 @@ async def save_news_to_db(news_items: list[dict], session: AsyncSession):
             summary=news.get("summary", "")[:1000],
             sentiment=score["compound"],
             source=news.get("source", "newsapi"),
-            pair=news.get("pair", None),
+            symbol=news.get("symbol", None),
             url=news.get("url", ""),
         )
 
