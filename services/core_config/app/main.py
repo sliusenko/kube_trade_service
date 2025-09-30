@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import (
+from core_config.app.routers import (
     commands,
     group_icons,
     timeframes,
