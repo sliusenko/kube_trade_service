@@ -1,9 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
-from common.models import Exchange, User, ServiceAccount, Symbol, FetchLog
+from common.models.exchanges import (
+    Exchange, ExchangeCredential, ExchangeSymbol,
+    ExchangeLimit, ExchangeStatusHistory, ExchangeFee
+)
+from common.models.users import User
 
 async def get_dashboard_stats(session: AsyncSession):
-    # 1. Біржі (active / inactive)
+    # 1) Біржі (active / inactive)
     q_exchanges_active = await session.execute(
         select(func.count()).select_from(Exchange).where(Exchange.is_active == True)
     )
@@ -15,29 +19,30 @@ async def get_dashboard_stats(session: AsyncSession):
         "inactive": q_exchanges_inactive.scalar_one(),
     }
 
-    # 2. Сервісні акаунти
-    q_sa = await session.execute(select(func.count()).select_from(ServiceAccount))
-    service_accounts = q_sa.scalar_one()
+    # 2) Кількість ExchangeCredential (усіх)
+    q_creds = await session.execute(select(func.count()).select_from(ExchangeCredential))
+    service_accounts = q_creds.scalar_one()
 
-    # 3. Symbols per exchange
+    # 3) Symbols per exchange (рахуємо активні символи)
     q_symbols = await session.execute(
-        select(Exchange.name, func.count(Symbol.id))
-        .join(Symbol, Symbol.exchange_id == Exchange.id)
+        select(Exchange.name, func.count(ExchangeSymbol.id))
+        .join(ExchangeSymbol, ExchangeSymbol.exchange_id == Exchange.id)
+        .where(ExchangeSymbol.is_active == True)
         .group_by(Exchange.name)
     )
     symbols_per_exchange = {name: count for name, count in q_symbols.all()}
 
-    # 4. Fetch results (успішні/неуспішні по типам)
-    q_fetch_by_type = await session.execute(
+    # 4) "Fetch results" замінимо на агрегацію по ExchangeStatusHistory (by event)
+    q_fetch_by_event = await session.execute(
         select(
-            FetchLog.type,
-            func.sum(case((FetchLog.success == True, 1), else_=0)).label("success"),
-            func.sum(case((FetchLog.success == False, 1), else_=0)).label("fail"),
-        ).group_by(FetchLog.type)
+            ExchangeStatusHistory.event,
+            func.sum(case((ExchangeStatusHistory.status == "success", 1), else_=0)).label("success"),
+            func.sum(case((ExchangeStatusHistory.status != "success", 1), else_=0)).label("fail"),
+        ).group_by(ExchangeStatusHistory.event)
     )
     fetch_by_type = [
-        {"type": row[0], "success": row[1], "fail": row[2]}
-        for row in q_fetch_by_type.all()
+        {"type": event, "success": success, "fail": fail}
+        for event, success, fail in q_fetch_by_event.all()
     ]
 
     overall_success = sum(row["success"] for row in fetch_by_type)
@@ -47,7 +52,7 @@ async def get_dashboard_stats(session: AsyncSession):
         {"type": "Fail", "value": overall_fail},
     ]
 
-    # 5. Users active / inactive
+    # 5) Users active / inactive
     q_users_active = await session.execute(
         select(func.count()).select_from(User).where(User.is_active == True)
     )
