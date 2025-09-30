@@ -3,19 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from common.models.config import ReasonCode
 from common.schemas.config import ReasonCodeSchema
-from common.deps.config import get_db
+from common.deps.db import get_session
 
 router = APIRouter(prefix="/reasons", tags=["reasons"])
 
 
 @router.get("/", response_model=list[ReasonCodeSchema])
-async def list_reasons(db: AsyncSession = Depends(get_db)):
+async def list_reasons(db: AsyncSession = Depends(get_session)):
     res = await db.execute(select(ReasonCode))
     return res.scalars().all()
 
 
 @router.get("/{code}", response_model=ReasonCodeSchema)
-async def get_reason(code: str, db: AsyncSession = Depends(get_db)):
+async def get_reason(code: str, db: AsyncSession = Depends(get_session)):
     obj = await db.get(ReasonCode, code)
     if not obj:
         raise HTTPException(404, "Reason not found")
@@ -23,7 +23,7 @@ async def get_reason(code: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=ReasonCodeSchema)
-async def create_reason(item: ReasonCodeSchema, db: AsyncSession = Depends(get_db)):
+async def create_reason(item: ReasonCodeSchema, db: AsyncSession = Depends(get_session)):
     obj = ReasonCode(**item.dict())
     db.add(obj)
     await db.commit()
@@ -32,7 +32,7 @@ async def create_reason(item: ReasonCodeSchema, db: AsyncSession = Depends(get_d
 
 
 @router.put("/{code}", response_model=ReasonCodeSchema)
-async def update_reason(code: str, item: ReasonCodeSchema, db: AsyncSession = Depends(get_db)):
+async def update_reason(code: str, item: ReasonCodeSchema, db: AsyncSession = Depends(get_session)):
     obj = await db.get(ReasonCode, code)
     if not obj:
         raise HTTPException(404, "Reason not found")
@@ -44,7 +44,7 @@ async def update_reason(code: str, item: ReasonCodeSchema, db: AsyncSession = De
 
 
 @router.delete("/{code}")
-async def delete_reason(code: str, db: AsyncSession = Depends(get_db)):
+async def delete_reason(code: str, db: AsyncSession = Depends(get_session)):
     obj = await db.get(ReasonCode, code)
     if not obj:
         raise HTTPException(404, "Reason not found")
