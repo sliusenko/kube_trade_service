@@ -2,13 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Встановлюємо залежності
-COPY requirements.txt .
+COPY services/core_config/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копіюємо код
-COPY ./app ./app
+COPY services/core_config ./core_config
+COPY services/common ./common
 
 EXPOSE 8000
+
+ENV PYTHONPATH=/app
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
