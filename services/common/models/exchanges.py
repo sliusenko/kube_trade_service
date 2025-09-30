@@ -220,23 +220,35 @@ class ExchangeFee(Base):
 
     def __repr__(self) -> str:
         return f"<ExchangeFee {self.exchange_id} symbol={self.symbol_id} maker={self.maker_fee} taker={self.taker_fee}>"
-
-
-
 class ExchangeLimit(Base):
     __tablename__ = "exchange_limits"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
-    limit_type   = Column(Text, nullable=False)
-    interval_unit = Column(Text, nullable=False)
-    interval_num  = Column(Integer, nullable=False)
-    limit        = Column(Integer, nullable=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
-    raw_json = Column(JSONB, server_default="{}")
-    fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    limit_type: Mapped[str] = mapped_column(Text, nullable=False)
+    interval_unit: Mapped[str] = mapped_column(Text, nullable=False)
+    interval_num: Mapped[int] = mapped_column(Integer, nullable=False)
+    limit: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    exchange = relationship("Exchange", back_populates="limits")
+    raw_json: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb"), nullable=False
+    )
+    fetched_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+    # 🔗 relationships
+    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
+        back_populates="limits"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExchangeLimit {self.exchange_id} {self.limit_type} {self.interval_num}{self.interval_unit}={self.limit}>"
 
 
 class ExchangeStatusHistory(Base):
