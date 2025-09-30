@@ -3,8 +3,9 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { signOut } from "./utils/auth";
 import UsersPage from "./pages/UsersPage";
 import ExchangesPage from "./pages/ExchangesPage";
-import NewsPage from "./pages/NewsPage";   // 👈 додати
-// import SettingsPage якщо треба
+import NewsPage from "./pages/NewsPage";
+import PageConfig from "./pages/PageConfig";
+
 
 const Page = ({ title, children }) => (
   <div className="p-6">
@@ -14,7 +15,6 @@ const Page = ({ title, children }) => (
 );
 
 const Dashboard = () => <Page title="Dashboard">Стартовий огляд.</Page>;
-const Settings = () => <Page title="Settings">Загальні налаштування.</Page>;
 
 const navStyle = ({ isActive }) => ({
   padding: "10px 14px",
@@ -36,7 +36,7 @@ export default function App() {
           <NavLink to="/" style={navStyle} end>Dashboard</NavLink>
           <NavLink to="/users" style={navStyle}>Users</NavLink>
           <NavLink to="/exchanges" style={navStyle}>Exchanges</NavLink>
-          <NavLink to="/settings" style={navStyle}>Settings</NavLink>
+          <NavLink to="/config" style={navStyle}>Config</NavLink>
           <NavLink to="/news" style={navStyle}>News</NavLink>
         </nav>
       </aside>
@@ -66,8 +66,8 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/exchanges" element={<ExchangesPage />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/news" element={<NewsPage />} />   {/* 👈 виправлено */}
+            <Route path="/config" element={<PageConfig />} />
+            <Route path="/news" element={<NewsPage />} />
             <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
           </Routes>
         </main>
