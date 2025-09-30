@@ -3,19 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from common.models.config import TradeProfile
 from common.schemas.config import TradeProfileSchema
-from common.deps.config import get_db
+from common.deps.db import get_session
 
 router = APIRouter(prefix="/trade-profiles", tags=["trade_profiles"])
 
 
 @router.get("/", response_model=list[TradeProfileSchema])
-async def list_trade_profiles(db: AsyncSession = Depends(get_db)):
+async def list_trade_profiles(db: AsyncSession = Depends(get_session)):
     res = await db.execute(select(TradeProfile))
     return res.scalars().all()
 
 
 @router.get("/{profile_id}", response_model=TradeProfileSchema)
-async def get_trade_profile(profile_id: int, db: AsyncSession = Depends(get_db)):
+async def get_trade_profile(profile_id: int, db: AsyncSession = Depends(get_session)):
     obj = await db.get(TradeProfile, profile_id)
     if not obj:
         raise HTTPException(404, "TradeProfile not found")
@@ -23,7 +23,7 @@ async def get_trade_profile(profile_id: int, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/", response_model=TradeProfileSchema)
-async def create_trade_profile(item: TradeProfileSchema, db: AsyncSession = Depends(get_db)):
+async def create_trade_profile(item: TradeProfileSchema, db: AsyncSession = Depends(get_session)):
     obj = TradeProfile(**item.dict(exclude={"id"}))
     db.add(obj)
     await db.commit()
@@ -32,7 +32,7 @@ async def create_trade_profile(item: TradeProfileSchema, db: AsyncSession = Depe
 
 
 @router.put("/{profile_id}", response_model=TradeProfileSchema)
-async def update_trade_profile(profile_id: int, item: TradeProfileSchema, db: AsyncSession = Depends(get_db)):
+async def update_trade_profile(profile_id: int, item: TradeProfileSchema, db: AsyncSession = Depends(get_session)):
     obj = await db.get(TradeProfile, profile_id)
     if not obj:
         raise HTTPException(404, "TradeProfile not found")
@@ -44,7 +44,7 @@ async def update_trade_profile(profile_id: int, item: TradeProfileSchema, db: As
 
 
 @router.delete("/{profile_id}")
-async def delete_trade_profile(profile_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_trade_profile(profile_id: int, db: AsyncSession = Depends(get_session)):
     obj = await db.get(TradeProfile, profile_id)
     if not obj:
         raise HTTPException(404, "TradeProfile not found")
