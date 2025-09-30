@@ -82,39 +82,30 @@ class ExchangeOut(ExchangeBase):
 # ExchangeCredential
 # -----------------------------
 class ExchangeCredentialBase(BaseModel):
-    exchange_id: UUID
     label: Optional[str] = None
-    is_service: bool = True
-    is_active: bool = True
-    scopes: List[str] = []
-
-    # reference to secret store instead of exposing secrets
+    is_service: Optional[bool] = True
+    is_active: Optional[bool] = True
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    api_passphrase: Optional[str] = None
+    subaccount: Optional[str] = None
+    scopes: Optional[dict] = None
     secret_ref: Optional[str] = None
     vault_path: Optional[str] = None
-
     valid_from: Optional[datetime] = None
     valid_to: Optional[datetime] = None
 class ExchangeCredentialCreate(ExchangeCredentialBase):
-    # для створення — можна дозволити вводити ключі напряму
-    api_key: Optional[str] = None
-    api_secret: Optional[str] = None
-    api_passphrase: Optional[str] = None
-    subaccount: Optional[str] = None
-class ExchangeCredentialUpdate(BaseModel):
-    label: Optional[str] = None
-    is_service: Optional[bool] = None
-    is_active: Optional[bool] = None
-    scopes: Optional[List[str]] = None
-    secret_ref: Optional[str] = None
-    vault_path: Optional[str] = None
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
+    pass
+class ExchangeCredentialUpdate(ExchangeCredentialBase):
+    """All fields optional for PATCH/PUT"""
+    pass
+class ExchangeCredentialRead(ExchangeCredentialBase):
+    id: UUID
+    exchange_id: UUID
+    created_at: datetime
 
-    # update secrets if rotated
-    api_key: Optional[str] = None
-    api_secret: Optional[str] = None
-    api_passphrase: Optional[str] = None
-    subaccount: Optional[str] = None
+    class Config:
+        from_attributes = True
 class ExchangeCredentialOut(ExchangeCredentialBase):
     model_config = ConfigDict(from_attributes=True)
 
