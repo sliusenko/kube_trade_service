@@ -249,18 +249,28 @@ class ExchangeLimit(Base):
 
     def __repr__(self) -> str:
         return f"<ExchangeLimit {self.exchange_id} {self.limit_type} {self.interval_num}{self.interval_unit}={self.limit}>"
-
-
 class ExchangeStatusHistory(Base):
     __tablename__ = "exchange_status_history"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
-    event   = Column(Text, nullable=False)
-    status  = Column(Text, nullable=False)
-    message = Column(Text)
+    event: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
 
-    exchange = relationship("Exchange", back_populates="status_history")
+    # 🔗 relationships
+    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
+        back_populates="status_history"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExchangeStatusHistory {self.exchange_id} {self.event} {self.status}>"
