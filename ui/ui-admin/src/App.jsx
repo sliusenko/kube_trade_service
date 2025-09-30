@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { signOut } from "./utils/auth";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // 🔹 Lazy imports
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -62,7 +63,13 @@ export default function App() {
         </header>
 
         <main style={{ flex: 1 }}>
-          <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+          <Suspense
+            fallback={
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                <CircularProgress />
+              </div>
+            }
+          >
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/users" element={<UsersPage />} />
