@@ -1,24 +1,22 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 from sqlalchemy import Column, BigInteger, Text, Numeric, TIMESTAMP, text
 from common.models.base import Base
 
 class PriceHistoryBase(BaseModel):
-    timestamp: datetime
     exchange: str
-    pair: str
-    price: float
-
+    symbol: str
+    price: Decimal = Field(..., gt=0)
 class PriceHistoryCreate(PriceHistoryBase):
-    pass
+    timestamp: Optional[datetime] = None 
+class PriceHistoryOut(PriceHistoryBase):
+    model_config = ConfigDict(from_attributes=True)
 
-class PriceHistoryInDB(PriceHistoryBase):
     id: int
-
-    class Config:
-        orm_mode = True
-
+    timestamp: datetime
 class NewsSentimentBase(BaseModel):
     published_at: datetime
     title: str
