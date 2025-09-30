@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from typing import Optional, Literal, Dict, Any
+from typing import Optional, List, Literal, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import (
@@ -81,44 +81,44 @@ class ExchangeOut(ExchangeBase):
 # ExchangeCredential
 # -----------------------------
 class ExchangeCredentialBase(BaseModel):
-    label: Optional[str] = Field(None, description="Label for this credential", example="Main account")
-    is_service: Optional[bool] = Field(True, description="Used by service account?", example=True)
-    is_active: Optional[bool] = Field(True, description="Is credential active?", example=True)
+    exchange_id: UUID
+    label: Optional[str] = None
+    is_service: bool = True
+    is_active: bool = True
+    scopes: List[str] = []
 
-    api_key: Optional[str] = Field(None, description="API key", example="abcd1234", json_schema_extra={"format": "password"})
-    api_secret: Optional[str] = Field(None, description="API secret", example="secretXYZ", json_schema_extra={"format": "password"})
-    api_passphrase: Optional[str] = Field(None, description="API passphrase (if required)", example="myPass", json_schema_extra={"format": "password"})
-    subaccount: Optional[str] = Field(None, description="Subaccount name", example="trading-bot")
+    # reference to secret store instead of exposing secrets
+    secret_ref: Optional[str] = None
+    vault_path: Optional[str] = None
+
+    valid_from: Optional[datetime] = None
+    valid_to: Optional[datetime] = None
 class ExchangeCredentialCreate(ExchangeCredentialBase):
-    pass
-class ExchangeCredentialRead(ExchangeCredentialBase):
-    id: uuid.UUID
-    exchange_id: uuid.UUID
+    # для створення — можна дозволити вводити ключі напряму
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    api_passphrase: Optional[str] = None
+    subaccount: Optional[str] = None
+class ExchangeCredentialUpdate(BaseModel):
+    label: Optional[str] = None
+    is_service: Optional[bool] = None
+    is_active: Optional[bool] = None
+    scopes: Optional[List[str]] = None
+    secret_ref: Optional[str] = None
+    vault_path: Optional[str] = None
+    valid_from: Optional[datetime] = None
+    valid_to: Optional[datetime] = None
+
+    # update secrets if rotated
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    api_passphrase: Optional[str] = None
+    subaccount: Optional[str] = None
+class ExchangeCredentialOut(ExchangeCredentialBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-class ExchangeSymbolRead(BaseModel):
-    id: int
-    exchange_id: uuid.UUID
-    symbol_id: str
-    symbol: str
-    base_asset: str
-    quote_asset: str
-    status: Optional[str]
-    type: Optional[str]
-    step_size: Optional[float]
-    tick_size: Optional[float]
-    min_qty: Optional[float]
-    max_qty: Optional[float]
-    min_notional: Optional[float]
-    max_notional: Optional[float]
-    filters: dict
-    is_active: bool
-    fetched_at: datetime
-
-    class Config:
-        from_attributes = True
 
 # -----------------------------
 # ExchangeFee (read-only)
