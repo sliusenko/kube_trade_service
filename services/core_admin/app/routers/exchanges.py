@@ -9,10 +9,10 @@ from common.models.exchanges import (
     ExchangeLimit, ExchangeStatusHistory, ExchangeFee
 )
 from common.schemas.exchanges import (
-    ExchangeCreate, ExchangeUpdate, ExchangeRead,
-    ExchangeCredentialCreate, ExchangeCredentialRead,
-    ExchangeSymbolRead, ExchangeLimitRead,
-    ExchangeStatusHistoryRead, ExchangeFeeRead
+    ExchangeCreate, ExchangeUpdate, ExchangeOut,
+    ExchangeCredentialCreate, ExchangeCredentialOut,
+    ExchangeSymbolOut, ExchangeLimitOut, ExchangeCredentialUpdate,
+    ExchangeStatusHistoryOut, ExchangeFeeOut
 )
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
@@ -20,13 +20,13 @@ router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 # ----------------------------------------------------------------
 # Exchange CRUD
 # ----------------------------------------------------------------
-@router.get("/", response_model=List[ExchangeRead])
+@router.get("/", response_model=List[ExchangeOut])
 async def list_exchanges(db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Exchange))
     return result.scalars().all()
 
 
-@router.get("/{exchange_id}", response_model=ExchangeRead)
+@router.get("/{exchange_id}", response_model=ExchangeOut)
 async def get_exchange(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Exchange).where(Exchange.id == exchange_id))
     exchange = result.scalar_one_or_none()
@@ -35,7 +35,7 @@ async def get_exchange(exchange_id: UUID, db: AsyncSession = Depends(get_session
     return exchange
 
 
-@router.post("/", response_model=ExchangeRead)
+@router.post("/", response_model=ExchangeOut)
 async def create_exchange(payload: ExchangeCreate, db: AsyncSession = Depends(get_session)):
     exchange = Exchange(**payload.dict())
     db.add(exchange)
@@ -44,7 +44,7 @@ async def create_exchange(payload: ExchangeCreate, db: AsyncSession = Depends(ge
     return exchange
 
 
-@router.put("/{exchange_id}", response_model=ExchangeRead)
+@router.put("/{exchange_id}", response_model=ExchangeOut)
 async def update_exchange(exchange_id: UUID, payload: ExchangeUpdate, db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Exchange).where(Exchange.id == exchange_id))
     exchange = result.scalar_one_or_none()
@@ -73,14 +73,14 @@ async def delete_exchange(exchange_id: UUID, db: AsyncSession = Depends(get_sess
 # ----------------------------------------------------------------
 # Exchange Credentials
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/credentials", response_model=List[ExchangeCredentialRead],)
+@router.get("/{exchange_id}/credentials", response_model=List[ExchangeCredentialOut],)
 async def list_credentials(exchange_id: UUID, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(ExchangeCredential).where(ExchangeCredential.exchange_id == exchange_id)
     )
     return result.scalars().all()
 
-@router.post("/{exchange_id}/credentials", response_model=ExchangeCredentialRead,)
+@router.post("/{exchange_id}/credentials", response_model=ExchangeCredentialOut,)
 async def add_credential(exchange_id: UUID, cred: ExchangeCredentialCreate, session: AsyncSession = Depends(get_session),):
     new_cred = ExchangeCredential(exchange_id=exchange_id, **cred.dict())
     session.add(new_cred)
@@ -88,7 +88,7 @@ async def add_credential(exchange_id: UUID, cred: ExchangeCredentialCreate, sess
     await session.refresh(new_cred)
     return new_cred
 
-@router.put("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialRead,)
+@router.put("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialOut,)
 async def update_credential(
     exchange_id: UUID,
     cred_id: UUID,
@@ -128,7 +128,7 @@ async def delete_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSess
     await session.commit()
     return {"ok": True}
 
-@router.get("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialRead)
+@router.get("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialOut)
 async def get_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
         select(ExchangeCredential).where(
@@ -145,7 +145,7 @@ async def get_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSession
 # ----------------------------------------------------------------
 # Exchange Symbols (read-only)
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/symbols", response_model=List[ExchangeSymbolRead])
+@router.get("/{exchange_id}/symbols", response_model=List[ExchangeSymbolOut])
 async def list_symbols(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(ExchangeSymbol).where(ExchangeSymbol.exchange_id == exchange_id)
@@ -155,7 +155,7 @@ async def list_symbols(exchange_id: UUID, db: AsyncSession = Depends(get_session
 # ----------------------------------------------------------------
 # Exchange Limits (read-only)
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/limits", response_model=List[ExchangeLimitRead])
+@router.get("/{exchange_id}/limits", response_model=List[ExchangeLimitOut])
 async def list_limits(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(ExchangeLimit).where(ExchangeLimit.exchange_id == exchange_id)
@@ -165,7 +165,7 @@ async def list_limits(exchange_id: UUID, db: AsyncSession = Depends(get_session)
 # ----------------------------------------------------------------
 # Exchange Fees (read-only)
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/fees", response_model=List[ExchangeFeeRead])
+@router.get("/{exchange_id}/fees", response_model=List[ExchangeFeeOut])
 async def list_fees(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(ExchangeFee).where(ExchangeFee.exchange_id == exchange_id)
@@ -175,7 +175,7 @@ async def list_fees(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
 # ----------------------------------------------------------------
 # Exchange Status History (read-only)
 # ----------------------------------------------------------------
-@router.get("/{exchange_id}/history", response_model=List[ExchangeStatusHistoryRead])
+@router.get("/{exchange_id}/history", response_model=List[ExchangeStatusHistoryOut])
 async def list_status_history(exchange_id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(ExchangeStatusHistory)

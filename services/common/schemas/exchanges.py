@@ -8,7 +8,6 @@ from sqlalchemy import (
     Column, BigInteger, Numeric, Text, Boolean, Integer, SmallInteger,
     ForeignKey, TIMESTAMP, UniqueConstraint, text
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
 from common.models.base import Base

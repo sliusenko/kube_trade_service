@@ -5,11 +5,11 @@ from typing import List
 
 from common.deps.db import get_session
 from common.models.scheduler import ApschedulerJob
-from common.schemas.scheduler import JobOut
+from common.schemas.scheduler import ApschedulerJobOut
 
 router = APIRouter(prefix="/scheduler", tags=["Scheduler"])
 
-@router.get("/jobs", response_model=List[JobOut])
+@router.get("/jobs", response_model=List[ApschedulerJobOut])
 async def list_jobs(session: AsyncSession = Depends(get_session)):
     res = await session.execute(select(ApschedulerJob))
     return res.scalars().all()
