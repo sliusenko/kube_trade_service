@@ -2,14 +2,6 @@ from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Inter
 from sqlalchemy.orm import relationship
 from common.models.base import Base
 
-
-class Role(Base):
-    __tablename__ = "roles"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
-    hierarchy_level = Column(Integer, nullable=False)
-
-
 class Command(Base):
     __tablename__ = "commands"
     id = Column(Integer, primary_key=True, index=True)
