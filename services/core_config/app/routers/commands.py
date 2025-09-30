@@ -9,7 +9,7 @@ router = APIRouter(prefix="/commands", tags=["commands"])
 
 
 @router.get("/", response_model=list[CommandSchema])
-async def list_commands(db: AsyncSession = Depends(get_db)):
+async def list_commands(db: AsyncSession = Depends(get_session)):
     res = await db.execute(select(Command))
     return res.scalars().all()
 

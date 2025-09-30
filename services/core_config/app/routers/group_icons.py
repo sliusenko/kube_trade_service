@@ -9,7 +9,7 @@ router = APIRouter(prefix="/group-icons", tags=["group_icons"])
 
 
 @router.get("/", response_model=list[GroupIconSchema])
-async def list_group_icons(db: AsyncSession = Depends(get_db)):
+async def list_group_icons(db: AsyncSession = Depends(get_session)):
     res = await db.execute(select(GroupIcon))
     return res.scalars().all()
 
