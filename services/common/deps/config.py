@@ -5,10 +5,12 @@ class Settings:
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "app_user")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
     POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
+    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "trade")
+
     AUTH_CRYPTONEW_TOKEN: str = os.getenv("AUTH_CRYPTONEW_TOKEN", "TOKEN")
-    FETCH_PRICE_INTERVAL_MIN: int = os.getenv("FETCH_PRICE_INTERVAL_MIN", "10")
+
+    FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
 
     @property
     def POSTGRES_DSN(self) -> str:
