@@ -5,12 +5,12 @@ import validator from "@rjsf/validator-ajv8";
 import { ExchangeFormSchema, ExchangeCredentialFormSchema } from "../forms/schemas";
 import {
   getExchanges,
-  getExchange,              // 👈 detail API
+  getExchange,
   createExchange,
   updateExchange,
   deleteExchange,
   getExchangeCredentials,
-  getExchangeCredential,    // 👈 detail API
+  getExchangeCredential,
   createExchangeCredential,
   updateExchangeCredential,
   deleteExchangeCredential,
@@ -50,7 +50,7 @@ export default function ExchangesPage() {
   const [formData, setFormData] = useState({});
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
-  const [limits, setFees] = useState([]);
+  const [fees, setFees] = useState([]);
   const [history, setHistory] = useState([]);
   const [credentials, setCredentials] = useState([]);
 
@@ -215,12 +215,7 @@ export default function ExchangesPage() {
           noHtml5Validate
         >
           <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Add />}
-              onClick={handleCreate}
-            >
+            <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreate}>
               Create
             </Button>
             <Button
@@ -333,7 +328,7 @@ export default function ExchangesPage() {
                 <TableRow key={s.id}>
                   <TableCell>{s.exchange_id}</TableCell>
                   <TableCell>{s.symbol}</TableCell>
-                  <TableCell>{s.is_active}</TableCell>
+                  <TableCell>{s.is_active ? "Yes" : "No"}</TableCell>
                   <TableCell>{s.base_asset}</TableCell>
                   <TableCell>{s.quote_asset}</TableCell>
                 </TableRow>
@@ -346,6 +341,7 @@ export default function ExchangesPage() {
       {/* LIMITS&FEES таблиці */}
       {activeTab === "LIMITS&FEES" && (
         <div>
+          {/* LIMITS */}
           <Paper>
             <Table>
               <TableHead>
@@ -378,18 +374,18 @@ export default function ExchangesPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
-                  <TableCell>Fee Type</TableCell>
-                  <TableCell>Maker</TableCell>
-                  <TableCell>Taker</TableCell>
+                  <TableCell>Volume Threshold</TableCell>
+                  <TableCell>Maker Fee</TableCell>
+                  <TableCell>Taker Fee</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {fees.map((f) => (
                   <TableRow key={f.id}>
                     <TableCell>{f.id}</TableCell>
-                    <TableCell>{f.fee_type}</TableCell>
-                    <TableCell>{f.maker}</TableCell>
-                    <TableCell>{f.taker}</TableCell>
+                    <TableCell>{f.volume_threshold}</TableCell>
+                    <TableCell>{f.maker_fee}</TableCell>
+                    <TableCell>{f.taker_fee}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -405,6 +401,7 @@ export default function ExchangesPage() {
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
+                <TableCell>Event</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Message</TableCell>
                 <TableCell>Created At</TableCell>
@@ -414,6 +411,7 @@ export default function ExchangesPage() {
               {history.map((h) => (
                 <TableRow key={h.id}>
                   <TableCell>{h.id}</TableCell>
+                  <TableCell>{h.event}</TableCell>
                   <TableCell>{h.status}</TableCell>
                   <TableCell>{h.message}</TableCell>
                   <TableCell>{h.created_at}</TableCell>
