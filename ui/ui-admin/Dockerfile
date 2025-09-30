@@ -21,17 +21,22 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx template (uses $PORT)
 COPY default.conf.template /etc/nginx/templates/default.conf.template
 
+# Copy entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Default PORT (can be overridden by Deployment/Helm)
 ENV PORT=8080
 
-# Generate final nginx config from template and start nginx
-# NOTE: envsubst *variable list* must use literal names (e.g. '$PORT'), not values.
+# Entrypoint генерує env.js
+ENTRYPOINT ["/entrypoint.sh"]
+
+# CMD генерує nginx.conf і запускає nginx
 CMD sh -c ': "${PORT:=8080}"; \
   envsubst '\''$PORT'\'' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && \
   exec nginx -g "daemon off;"'
 
-# Optional: container metadata
 EXPOSE 8080
 
-# Healthcheck uses the resolved PORT at runtime
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- "http://localhost:${PORT:-8080}/" || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD wget -qO- "http://localhost:${PORT:-8080}/" || exit 1
