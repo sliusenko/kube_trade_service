@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@mui/material";
-import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis } from "recharts";
-import { getDashboardStats } from "../api/dashboard"; // 👈 бекенд API (ти додаси)
+import {
+  PieChart, Pie, Cell, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis
+} from "recharts";
+import { getDashboardStats } from "../api/dashboard";
 
 const COLORS = ["#0088FE", "#FF8042", "#00C49F", "#FFBB28"];
 
@@ -10,8 +13,12 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const data = await getDashboardStats();
-      setStats(data);
+      try {
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (e) {
+        console.error("Failed to load dashboard stats", e);
+      }
     };
     fetchStats();
   }, []);
