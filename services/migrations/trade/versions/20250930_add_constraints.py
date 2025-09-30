@@ -30,6 +30,7 @@ def upgrade() -> None:
         ["exchange_id", "symbol_id", "volume_threshold"],
     )
 
+    op.alter_column("news_sentiment", "pair", new_column_name="symbol")
 
 def downgrade() -> None:
     # ---- exchange_limits ----
@@ -37,3 +38,4 @@ def downgrade() -> None:
 
     # ---- exchange_fees ----
     op.drop_constraint("uq_exchange_fees", "exchange_fees", type_="unique")
+
