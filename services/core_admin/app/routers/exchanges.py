@@ -128,6 +128,20 @@ async def delete_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSess
     await session.commit()
     return {"ok": True}
 
+@router.get("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialRead)
+async def get_credential(exchange_id: UUID, cred_id: UUID, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(ExchangeCredential).where(
+            ExchangeCredential.exchange_id == exchange_id,
+            ExchangeCredential.id == cred_id
+        )
+    )
+    cred = result.scalar_one_or_none()
+    if not cred:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    return cred
+
+
 # ----------------------------------------------------------------
 # Exchange Symbols (read-only)
 # ----------------------------------------------------------------
