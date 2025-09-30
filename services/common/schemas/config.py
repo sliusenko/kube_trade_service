@@ -1,16 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
 
-
-class RoleSchema(BaseModel):
-    id: int
-    name: str
-    hierarchy_level: int
-
-    class Config:
-        from_attributes = True
-
-
 class CommandSchema(BaseModel):
     id: int
     command: str
