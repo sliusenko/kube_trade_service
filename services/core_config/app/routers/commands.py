@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from common.models.config import Command
 from common.schemas.config import CommandSchema
-from common.deps.config import get_db
+from common.deps.db import get_session
 
 router = APIRouter(prefix="/commands", tags=["commands"])
 
@@ -15,7 +15,7 @@ async def list_commands(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{command_id}", response_model=CommandSchema)
-async def get_command(command_id: int, db: AsyncSession = Depends(get_db)):
+async def get_command(command_id: int, db: AsyncSession = Depends(get_session)):
     res = await db.get(Command, command_id)
     if not res:
         raise HTTPException(404, "Command not found")
@@ -23,7 +23,7 @@ async def get_command(command_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=CommandSchema)
-async def create_command(cmd: CommandSchema, db: AsyncSession = Depends(get_db)):
+async def create_command(cmd: CommandSchema, db: AsyncSession = Depends(get_session)):
     obj = Command(**cmd.dict(exclude={"id"}))
     db.add(obj)
     await db.commit()
@@ -32,7 +32,7 @@ async def create_command(cmd: CommandSchema, db: AsyncSession = Depends(get_db))
 
 
 @router.put("/{command_id}", response_model=CommandSchema)
-async def update_command(command_id: int, cmd: CommandSchema, db: AsyncSession = Depends(get_db)):
+async def update_command(command_id: int, cmd: CommandSchema, db: AsyncSession = Depends(get_session)):
     obj = await db.get(Command, command_id)
     if not obj:
         raise HTTPException(404, "Command not found")
@@ -44,7 +44,7 @@ async def update_command(command_id: int, cmd: CommandSchema, db: AsyncSession =
 
 
 @router.delete("/{command_id}")
-async def delete_command(command_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_command(command_id: int, db: AsyncSession = Depends(get_session)):
     obj = await db.get(Command, command_id)
     if not obj:
         raise HTTPException(404, "Command not found")
