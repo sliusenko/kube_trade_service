@@ -1,5 +1,6 @@
 import uuid
 import datetime as dt
+from decimal import Decimal
 from typing import Optional, List, Dict, Any
 
 from sqlalchemy import (
@@ -10,7 +11,6 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-
 
 class Exchange(Base):
     __tablename__ = "exchanges"
@@ -187,22 +187,40 @@ class ExchangeSymbol(Base):
 
     def __repr__(self) -> str:
         return f"<ExchangeSymbol {self.symbol} ({self.base_asset}/{self.quote_asset}) active={self.is_active}>"
-
 class ExchangeFee(Base):
     __tablename__ = "exchange_fees"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
-    symbol_id   = Column(BigInteger, ForeignKey("exchange_symbols.id", ondelete="CASCADE"), nullable=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    symbol_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("exchange_symbols.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
-    volume_threshold = Column(Numeric, nullable=False)
-    maker_fee = Column(Numeric, nullable=True)
-    taker_fee = Column(Numeric, nullable=True)
+    volume_threshold: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    maker_fee: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
+    taker_fee: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
 
-    fetched_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"))
+    fetched_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=text("now()")
+    )
 
-    exchange = relationship("Exchange", back_populates="fees")
-    symbol   = relationship("ExchangeSymbol", back_populates="fees")
+    # 🔗 relationships
+    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
+        back_populates="fees"
+    )
+    symbol: Mapped[Optional["ExchangeSymbol"]] = relationship(  # type: ignore[name-defined]
+        back_populates="fees"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExchangeFee {self.exchange_id} symbol={self.symbol_id} maker={self.maker_fee} taker={self.taker_fee}>"
+
 
 
 class ExchangeLimit(Base):
