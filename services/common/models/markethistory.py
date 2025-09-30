@@ -1,6 +1,7 @@
 # app/models/price_history.py
 import datetime as dt
 from decimal import Decimal
+from typing import Optional
 from sqlalchemy import BigInteger, Text, Numeric, TIMESTAMP, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,15 +22,19 @@ class PriceHistory(Base):
     def __repr__(self) -> str:
         return f"<PriceHistory {self.exchange}:{self.symbol} {self.price} @ {self.timestamp}>"
 
-
 class NewsSentiment(Base):
     __tablename__ = "news_sentiment"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    published_at = Column(TIMESTAMP(timezone=True), nullable=False)
-    title   = Column(Text, nullable=False)
-    summary = Column(Text)
-    sentiment = Column(Numeric)
-    source  = Column(Text)
-    pair    = Column(Text)
-    url     = Column(Text)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    published_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sentiment: Mapped[Optional[Decimal]] = mapped_column(Numeric, nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    symbol: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<NewsSentiment {self.published_at} {self.title[:30]!r}...>"
