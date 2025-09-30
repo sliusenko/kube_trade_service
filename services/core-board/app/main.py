@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import dashboard
+from core_board.app.routers import dashboard
 
 app = FastAPI(title="core-admin")
 
