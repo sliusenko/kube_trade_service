@@ -3,6 +3,8 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { signOut } from "./utils/auth";
 import UsersPage from "./pages/UsersPage";
 import ExchangesPage from "./pages/ExchangesPage";
+import NewsPage from "./pages/NewsPage";   // 👈 додати
+// import SettingsPage якщо треба
 
 const Page = ({ title, children }) => (
   <div className="p-6">
@@ -35,13 +37,13 @@ export default function App() {
           <NavLink to="/users" style={navStyle}>Users</NavLink>
           <NavLink to="/exchanges" style={navStyle}>Exchanges</NavLink>
           <NavLink to="/settings" style={navStyle}>Settings</NavLink>
-          <NavLink to="/news" style={navStyle}>news</NavLink>          
+          <NavLink to="/news" style={navStyle}>News</NavLink>
         </nav>
       </aside>
 
       {/* Main content */}
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {/* 🔑 Header з кнопкою Sign Out */}
+        {/* 🔑 Header */}
         <header style={{ borderBottom: "1px solid #e5e7eb", padding: "10px 16px", display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={signOut}
@@ -65,7 +67,7 @@ export default function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/exchanges" element={<ExchangesPage />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/news" element={<Settings />} />
+            <Route path="/news" element={<NewsPage />} />   {/* 👈 виправлено */}
             <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
           </Routes>
         </main>
@@ -73,3 +75,4 @@ export default function App() {
     </div>
   );
 }
+
