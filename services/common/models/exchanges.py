@@ -1,59 +1,95 @@
 import uuid
+import datetime as dt
+from typing import Optional, List, Dict, Any
+
 from sqlalchemy import (
-    Column, BigInteger, Numeric, Text, Boolean, Integer, SmallInteger,
-    ForeignKey, TIMESTAMP, UniqueConstraint, text
+    Text, SmallInteger, Integer, Boolean, TIMESTAMP, text, JSON
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 
 
 class Exchange(Base):
     __tablename__ = "exchanges"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    code = Column(Text, nullable=False, unique=True)
-    name = Column(Text, nullable=False)
-    kind = Column(Text, nullable=False, server_default=text("'spot'"))
-    environment = Column(Text, nullable=False, server_default=text("'prod'"))
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'spot'"))
+    environment: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'prod'"))
 
-    base_url_public  = Column(Text)
-    base_url_private = Column(Text)
-    ws_public_url    = Column(Text)
-    ws_private_url   = Column(Text)
-    data_feed_url    = Column(Text)
+    base_url_public: Mapped[Optional[str]] = mapped_column(Text)
+    base_url_private: Mapped[Optional[str]] = mapped_column(Text)
+    ws_public_url: Mapped[Optional[str]] = mapped_column(Text)
+    ws_private_url: Mapped[Optional[str]] = mapped_column(Text)
+    data_feed_url: Mapped[Optional[str]] = mapped_column(Text)
 
-    fetch_symbols_interval_min = Column(SmallInteger, nullable=False, server_default=text("60"))
-    fetch_filters_interval_min = Column(SmallInteger, nullable=False, server_default=text("1440"))
-    fetch_limits_interval_min  = Column(SmallInteger, nullable=False, server_default=text("1440"))
-    fetch_fees_interval_min    = Column(SmallInteger, nullable=False, server_default=text("1440"))
+    fetch_symbols_interval_min: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default=text("60")
+    )
+    fetch_filters_interval_min: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default=text("1440")
+    )
+    fetch_limits_interval_min: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default=text("1440")
+    )
+    fetch_fees_interval_min: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default=text("1440")
+    )
 
-    rate_limit_per_min = Column(Integer)
-    recv_window_ms     = Column(Integer, server_default=text("5000"))
-    request_timeout_ms = Column(Integer, server_default=text("10000"))
+    rate_limit_per_min: Mapped[Optional[int]] = mapped_column(Integer)
+    recv_window_ms: Mapped[int] = mapped_column(Integer, server_default=text("5000"))
+    request_timeout_ms: Mapped[int] = mapped_column(Integer, server_default=text("10000"))
 
-    is_active = Column(Boolean, nullable=False, server_default=text("true"))
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
 
-    last_symbols_refresh_at = Column(TIMESTAMP(timezone=True))
-    last_filters_refresh_at = Column(TIMESTAMP(timezone=True))
-    last_fees_refresh_at    = Column(TIMESTAMP(timezone=True))
-    last_limits_refresh_at  = Column(TIMESTAMP(timezone=True))
+    last_symbols_refresh_at: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
+    last_filters_refresh_at: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
+    last_fees_refresh_at: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
+    last_limits_refresh_at: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
 
-    status     = Column(Text)
-    status_msg = Column(Text)
+    status: Mapped[Optional[str]] = mapped_column(Text)
+    status_msg: Mapped[Optional[str]] = mapped_column(Text)
 
-    features = Column(JSONB, server_default=text("'{}'::jsonb"))
-    extra    = Column(JSONB, server_default=text("'{}'::jsonb"))
+    features: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb")
+    )
+    extra: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb")
+    )
 
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
-    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
 
-    # 🔗 Relationships
-    credentials = relationship("ExchangeCredential", back_populates="exchange", cascade="all, delete-orphan")
-    symbols     = relationship("ExchangeSymbol", back_populates="exchange", cascade="all, delete-orphan")
-    limits      = relationship("ExchangeLimit", back_populates="exchange", cascade="all, delete-orphan")
-    status_history = relationship("ExchangeStatusHistory", back_populates="exchange", cascade="all, delete-orphan")
-    fees        = relationship("ExchangeFee", back_populates="exchange", cascade="all, delete-orphan")
+    # relationships
+    credentials: Mapped[List["ExchangeCredential"]] = relationship(  # type: ignore[name-defined]
+        back_populates="exchange", cascade="all, delete-orphan"
+    )
+    symbols: Mapped[List["ExchangeSymbol"]] = relationship(  # type: ignore[name-defined]
+        back_populates="exchange", cascade="all, delete-orphan"
+    )
+    limits: Mapped[List["ExchangeLimit"]] = relationship(  # type: ignore[name-defined]
+        back_populates="exchange", cascade="all, delete-orphan"
+    )
+    status_history: Mapped[List["ExchangeStatusHistory"]] = relationship(  # type: ignore[name-defined]
+        back_populates="exchange", cascade="all, delete-orphan"
+    )
+    fees: Mapped[List["ExchangeFee"]] = relationship(  # type: ignore[name-defined]
+        back_populates="exchange", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<Exchange {self.code} ({self.environment}) active={self.is_active}>"
 
 
 class ExchangeCredential(Base):
