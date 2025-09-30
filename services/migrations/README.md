@@ -14,3 +14,6 @@ alembic upgrade head
 
 alembic revision --autogenerate -m "init full schema"
 alembic upgrade head
+
+alembic revision -m "add unique constraints for exchange_limits and exchange_fees"
+alembic upgrade head
