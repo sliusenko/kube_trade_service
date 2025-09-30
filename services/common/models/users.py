@@ -59,6 +59,19 @@ class Role(Base):
 
     def __repr__(self) -> str:
         return f"<Role {self.name}>"
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    name: Mapped[str] = mapped_column(Text, primary_key=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # relationships
+    roles: Mapped[List["RolePermission"]] = relationship(  # type: ignore[name-defined]
+        back_populates="permission",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Permission {self.name}>"
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
@@ -68,10 +81,3 @@ class RolePermission(Base):
 
     role = relationship("Role", back_populates="permissions")
     permission = relationship("Permission", back_populates="roles")
-class Permission(Base):
-    __tablename__ = "permissions"
-
-    name = Column(Text, primary_key=True)
-    description = Column(Text)
-
-    roles = relationship("RolePermission", back_populates="permission")
