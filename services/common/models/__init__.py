@@ -4,7 +4,7 @@ from .users import User, Role, Permission, RolePermission
 from .exchanges import *
 from .markethistory import *
 from .scheduler import *
-
+from .config import *
 
 
 __all__ = [
@@ -12,5 +12,5 @@ __all__ = [
     "Exchange", "ExchangeCredential", "ExchangeSymbol",
     "ExchangeFee", "ExchangeLimit", "ExchangeStatusHistory",
     "PriceHistory", "NewsSentiment", "User", "Role", "Permission",
-    "RolePermission"
+    "RolePermission", "Command", "GroupIcon", "Timeframe", "ReasonCode", "TradeProfile", "TradeCondition"
 ]
