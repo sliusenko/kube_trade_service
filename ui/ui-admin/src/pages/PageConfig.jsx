@@ -17,21 +17,27 @@ import { Add, Delete } from "@mui/icons-material";
 import {
   getTimeframes,
   createTimeframe,
+  updateTimeframe,
   deleteTimeframe,
   getCommands,
   createCommand,
+  updateCommand,
   deleteCommand,
   getReasons,
   createReason,
+  updateReason,
   deleteReason,
   getTradeProfiles,
   createTradeProfile,
+  updateTradeProfile,
   deleteTradeProfile,
   getTradeConditions,
   createTradeCondition,
+  updateTradeCondition,
   deleteTradeCondition,
   getGroupIcons,
   createGroupIcon,
+  updateGroupIcon,
   deleteGroupIcon,
 } from "../api/config";
 
@@ -57,9 +63,14 @@ export default function PageConfig() {
     setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
     loadTimeframes();
   }
+  async function saveTimeframe(tf) {
+    await updateTimeframe(tf.code, tf);
+    loadTimeframes();
+  }
   async function removeTimeframe(code) {
     if (window.confirm("Видалити таймфрейм?")) {
-      await deleteTimeframe(code); loadTimeframes();
+      await deleteTimeframe(code);
+      loadTimeframes();
     }
   }
 
@@ -74,9 +85,14 @@ export default function PageConfig() {
     setCmdForm({ command: "", group_name: "", description: "" });
     loadCommands();
   }
+  async function saveCommand(cmd) {
+    await updateCommand(cmd.id, cmd);
+    loadCommands();
+  }
   async function removeCommand(id) {
     if (window.confirm("Видалити команду?")) {
-      await deleteCommand(id); loadCommands();
+      await deleteCommand(id);
+      loadCommands();
     }
   }
 
@@ -91,9 +107,14 @@ export default function PageConfig() {
     setReasonForm({ code: "", description: "", category: "" });
     loadReasons();
   }
+  async function saveReason(r) {
+    await updateReason(r.code, r);
+    loadReasons();
+  }
   async function removeReason(code) {
     if (window.confirm("Видалити reason?")) {
-      await deleteReason(code); loadReasons();
+      await deleteReason(code);
+      loadReasons();
     }
   }
 
@@ -108,9 +129,14 @@ export default function PageConfig() {
     setProfileForm({ name: "", description: "" });
     loadProfiles();
   }
+  async function saveProfile(p) {
+    await updateTradeProfile(p.id, p);
+    loadProfiles();
+  }
   async function removeProfile(id) {
     if (window.confirm("Видалити профіль?")) {
-      await deleteTradeProfile(id); loadProfiles();
+      await deleteTradeProfile(id);
+      loadProfiles();
     }
   }
 
@@ -132,9 +158,14 @@ export default function PageConfig() {
     setConditionForm({ profile_id: "", action: "", condition_type: "", param_1: "", param_2: "", priority: "" });
     loadConditions();
   }
+  async function saveCondition(c) {
+    await updateTradeCondition(c.id, c);
+    loadConditions();
+  }
   async function removeCondition(id) {
     if (window.confirm("Видалити condition?")) {
-      await deleteTradeCondition(id); loadConditions();
+      await deleteTradeCondition(id);
+      loadConditions();
     }
   }
 
@@ -149,9 +180,14 @@ export default function PageConfig() {
     setIconForm({ group_name: "", icon: "" });
     loadIcons();
   }
+  async function saveIcon(ic) {
+    await updateGroupIcon(ic.group_name, ic);
+    loadIcons();
+  }
   async function removeIcon(name) {
     if (window.confirm("Видалити іконку?")) {
-      await deleteGroupIcon(name); loadIcons();
+      await deleteGroupIcon(name);
+      loadIcons();
     }
   }
 
@@ -202,15 +238,24 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {timeframes.map(tf => (
+            {timeframes.map((tf) => (
               <TableRow key={tf.code}>
                 <TableCell>{tf.code}</TableCell>
-                <TableCell>{tf.history_limit}</TableCell>
-                <TableCell>{tf.min_len}</TableCell>
-                <TableCell>{tf.hours}</TableCell>
-                <TableCell>{tf.lookback}</TableCell>
+                <TableCell>
+                  <TextField value={tf.history_limit || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, history_limit: e.target.value } : t))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={tf.min_len || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, min_len: e.target.value } : t))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={tf.hours || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, hours: e.target.value } : t))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={tf.lookback || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, lookback: e.target.value } : t))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeTimeframe(tf.code)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveTimeframe(tf)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeTimeframe(tf.code)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -237,14 +282,21 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {commands.map(cmd => (
+            {commands.map((cmd) => (
               <TableRow key={cmd.id}>
                 <TableCell>{cmd.id}</TableCell>
-                <TableCell>{cmd.command}</TableCell>
-                <TableCell>{cmd.group_name}</TableCell>
-                <TableCell>{cmd.description}</TableCell>
+                <TableCell>
+                  <TextField value={cmd.command || ""} size="small" onChange={(e) => setCommands(prev => prev.map(c => c.id === cmd.id ? { ...c, command: e.target.value } : c))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={cmd.group_name || ""} size="small" onChange={(e) => setCommands(prev => prev.map(c => c.id === cmd.id ? { ...c, group_name: e.target.value } : c))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={cmd.description || ""} size="small" onChange={(e) => setCommands(prev => prev.map(c => c.id === cmd.id ? { ...c, description: e.target.value } : c))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeCommand(cmd.id)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveCommand(cmd)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeCommand(cmd.id)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -270,13 +322,18 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {reasons.map(r => (
+            {reasons.map((r) => (
               <TableRow key={r.code}>
                 <TableCell>{r.code}</TableCell>
-                <TableCell>{r.description}</TableCell>
-                <TableCell>{r.category}</TableCell>
+                <TableCell>
+                  <TextField value={r.description || ""} size="small" onChange={(e) => setReasons(prev => prev.map(x => x.code === r.code ? { ...x, description: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={r.category || ""} size="small" onChange={(e) => setReasons(prev => prev.map(x => x.code === r.code ? { ...x, category: e.target.value } : x))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeReason(r.code)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveReason(r)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeReason(r.code)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -301,13 +358,18 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {profiles.map(p => (
+            {profiles.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{p.id}</TableCell>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{p.description}</TableCell>
+                <TableCell>
+                  <TextField value={p.name || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={p.description || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeProfile(p.id)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveProfile(p)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeProfile(p.id)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -317,12 +379,12 @@ export default function PageConfig() {
 
       {/* ---- Trade Conditions ---- */}
       <TabPanel value={tab} index={4}>
-        <form onSubmit={addCondition} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <form onSubmit={addCondition} style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
           <TextField label="Profile ID" value={conditionForm.profile_id} onChange={(e) => setConditionForm({ ...conditionForm, profile_id: e.target.value })} />
           <TextField label="Action" value={conditionForm.action} onChange={(e) => setConditionForm({ ...conditionForm, action: e.target.value })} />
           <TextField label="Condition Type" value={conditionForm.condition_type} onChange={(e) => setConditionForm({ ...conditionForm, condition_type: e.target.value })} />
-          <TextField label="Param 1" value={conditionForm.param_1} onChange={(e) => setConditionForm({ ...conditionForm, param_1: e.target.value })} />
-          <TextField label="Param 2" value={conditionForm.param_2} onChange={(e) => setConditionForm({ ...conditionForm, param_2: e.target.value })} />
+          <TextField label="Param1" value={conditionForm.param_1} onChange={(e) => setConditionForm({ ...conditionForm, param_1: e.target.value })} />
+          <TextField label="Param2" value={conditionForm.param_2} onChange={(e) => setConditionForm({ ...conditionForm, param_2: e.target.value })} />
           <TextField label="Priority" value={conditionForm.priority} onChange={(e) => setConditionForm({ ...conditionForm, priority: e.target.value })} />
           <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
         </form>
@@ -340,17 +402,28 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {conditions.map(c => (
+            {conditions.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>{c.id}</TableCell>
                 <TableCell>{c.profile_id}</TableCell>
-                <TableCell>{c.action}</TableCell>
-                <TableCell>{c.condition_type}</TableCell>
-                <TableCell>{c.param_1}</TableCell>
-                <TableCell>{c.param_2}</TableCell>
-                <TableCell>{c.priority}</TableCell>
+                <TableCell>
+                  <TextField value={c.action || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, action: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={c.condition_type || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, condition_type: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={c.param_1 || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, param_1: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={c.param_2 || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, param_2: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={c.priority || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, priority: e.target.value } : x))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeCondition(c.id)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveCondition(c)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeCondition(c.id)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -374,12 +447,15 @@ export default function PageConfig() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {icons.map(ic => (
+            {icons.map((ic) => (
               <TableRow key={ic.group_name}>
                 <TableCell>{ic.group_name}</TableCell>
-                <TableCell>{ic.icon}</TableCell>
+                <TableCell>
+                  <TextField value={ic.icon || ""} size="small" onChange={(e) => setIcons(prev => prev.map(x => x.group_name === ic.group_name ? { ...x, icon: e.target.value } : x))} />
+                </TableCell>
                 <TableCell align="right">
-                  <Button color="error" startIcon={<Delete />} onClick={() => removeIcon(ic.group_name)}>Видалити</Button>
+                  <Button size="small" variant="contained" onClick={() => saveIcon(ic)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeIcon(ic.group_name)}>Видалити</Button>
                 </TableCell>
               </TableRow>
             ))}
