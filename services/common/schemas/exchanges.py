@@ -214,13 +214,16 @@ class ExchangeLimitOut(ExchangeLimitBase):
 # -----------------------------
 # ExchangeStatusHistory (read-only)
 # -----------------------------
-class ExchangeStatusHistoryRead(BaseModel):
-    id: int
-    exchange_id: uuid.UUID
+class ExchangeStatusHistoryBase(BaseModel):
+    exchange_id: UUID
     event: str
     status: str
-    message: Optional[str]
+    message: Optional[str] = None
+class ExchangeStatusHistoryCreate(ExchangeStatusHistoryBase):
+    pass
+class ExchangeStatusHistoryOut(ExchangeStatusHistoryBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
