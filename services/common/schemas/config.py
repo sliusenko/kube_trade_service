@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class CommandSchema(BaseModel):
     id: int
     command: str
@@ -24,7 +25,7 @@ class TimeframeSchema(BaseModel):
     history_limit: Optional[int]
     min_len: Optional[int]
     hours: Optional[float]
-    lookback: Optional[str]  # ISO 8601 duration
+    lookback: Optional[str]
 
     class Config:
         from_attributes = True
