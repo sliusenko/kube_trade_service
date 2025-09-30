@@ -6,7 +6,7 @@ from typing import Optional, List
 from sqlalchemy import Text, String, Boolean, TIMESTAMP, ForeignKey, func, text, Index
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from common.db.base import Base  # ваш Declarative Base
+from .base import Base
 
 
 class User(Base):
