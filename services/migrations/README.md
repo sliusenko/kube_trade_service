@@ -11,6 +11,7 @@ alembic -c alembic_trade.ini upgrade head
 alembic revision --autogenerate -m "..."
 alembic upgrade head
 
+source .venv/bin/activate
 
 alembic revision --autogenerate -m "init full schema"
 alembic upgrade head
