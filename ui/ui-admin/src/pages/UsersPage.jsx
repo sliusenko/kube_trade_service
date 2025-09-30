@@ -36,17 +36,26 @@ export default function AdminPage() {
   useEffect(() => { loadUsers(); }, []);
 
   const handleSaveUser = async () => {
-    if (editUser) {
-      await updateUser(editUser.user_id, {
-        email: userForm.email,
-        role: userForm.role,
-        is_active: userForm.is_active
-      });
-    } else {
-      await createUser(userForm);
+    try {
+      if (editUser) {
+        const payload = {
+          email: userForm.email,
+          role: userForm.role,
+          is_active: userForm.is_active
+        };
+        if (userForm.password) {
+          payload.password = userForm.password;
+        }
+        await updateUser(editUser.user_id, payload);
+      } else {
+        await createUser(userForm);
+      }
+      loadUsers();
+      setOpenUser(false);
+    } catch (err) {
+      console.error(err);
+      alert("Помилка при збереженні користувача");
     }
-    loadUsers();
-    setOpenUser(false);
   };
 
   // === ROLES ===
@@ -59,13 +68,18 @@ export default function AdminPage() {
   useEffect(() => { loadRoles(); }, []);
 
   const handleSaveRole = async () => {
-    if (editRole) {
-      await updateRole(editRole.name, roleForm);
-    } else {
-      await createRole(roleForm);
+    try {
+      if (editRole) {
+        await updateRole(editRole.name, roleForm);
+      } else {
+        await createRole(roleForm);
+      }
+      loadRoles();
+      setOpenRole(false);
+    } catch (err) {
+      console.error(err);
+      alert("Помилка при збереженні ролі");
     }
-    loadRoles();
-    setOpenRole(false);
   };
 
   // === PERMISSIONS ===
@@ -78,13 +92,18 @@ export default function AdminPage() {
   useEffect(() => { loadPermissions(); }, []);
 
   const handleSavePerm = async () => {
-    if (editPerm) {
-      await updatePermission(editPerm.name, permForm);
-    } else {
-      await createPermission(permForm);
+    try {
+      if (editPerm) {
+        await updatePermission(editPerm.name, permForm);
+      } else {
+        await createPermission(permForm);
+      }
+      loadPermissions();
+      setOpenPerm(false);
+    } catch (err) {
+      console.error(err);
+      alert("Помилка при збереженні permission");
     }
-    loadPermissions();
-    setOpenPerm(false);
   };
 
   // === ROLE PERMISSIONS ===
@@ -96,9 +115,14 @@ export default function AdminPage() {
   useEffect(() => { loadRolePerms(); }, []);
 
   const handleSaveRp = async () => {
-    await createRolePermission(rpForm);
-    loadRolePerms();
-    setOpenRp(false);
+    try {
+      await createRolePermission(rpForm);
+      loadRolePerms();
+      setOpenRp(false);
+    } catch (err) {
+      console.error(err);
+      alert("Помилка при створенні role-permission (можливо вже існує)");
+    }
   };
 
   // === RENDER ===
@@ -124,13 +148,24 @@ export default function AdminPage() {
               { field: "username", headerName: "Username", flex: 1 },
               { field: "email", headerName: "Email", flex: 1 },
               { field: "role", headerName: "Role", width: 120 },
-              { field: "is_active", headerName: "Active", width: 100 },
+              {
+                field: "is_active", headerName: "Active", width: 100,
+                renderCell: (p) => (p.value ? "✅" : "❌")
+              },
               {
                 field: "actions", headerName: "Actions", width: 180,
                 renderCell: (p) => (
                   <Stack direction="row" spacing={1}>
-                    <Button startIcon={<Edit />} onClick={() => { setEditUser(p.row); setUserForm(p.row); setOpenUser(true); }}>Edit</Button>
-                    <Button color="error" startIcon={<Delete />} onClick={() => deleteUser(p.row.user_id).then(loadUsers)}>Delete</Button>
+                    <Button startIcon={<Edit />} onClick={() => { setEditUser(p.row); setUserForm({ ...p.row, password: "" }); setOpenUser(true); }}>Edit</Button>
+                    <Button color="error" startIcon={<Delete />} onClick={async () => {
+                      try {
+                        await deleteUser(p.row.user_id);
+                        loadUsers();
+                      } catch (err) {
+                        console.error(err);
+                        alert("Помилка при видаленні користувача");
+                      }
+                    }}>Delete</Button>
                   </Stack>
                 )
               }
@@ -142,7 +177,12 @@ export default function AdminPage() {
             <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
               <TextField label="Username" value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} disabled={!!editUser} />
               <TextField label="Email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
-              {!editUser && <TextField label="Password" type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} />}
+              <TextField
+                label={editUser ? "Password (leave blank to keep unchanged)" : "Password"}
+                type="password"
+                value={userForm.password}
+                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+              />
               <Select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}>
                 {roles.map((r) => (
                   <MenuItem key={r.name} value={r.name}>{r.name}</MenuItem>
@@ -174,7 +214,15 @@ export default function AdminPage() {
                 renderCell: (p) => (
                   <Stack direction="row" spacing={1}>
                     <Button startIcon={<Edit />} onClick={() => { setEditRole(p.row); setRoleForm(p.row); setOpenRole(true); }}>Edit</Button>
-                    <Button color="error" startIcon={<Delete />} onClick={() => deleteRole(p.row.name).then(loadRoles)}>Delete</Button>
+                    <Button color="error" startIcon={<Delete />} onClick={async () => {
+                      try {
+                        await deleteRole(p.row.name);
+                        loadRoles();
+                      } catch (err) {
+                        console.error(err);
+                        alert("Помилка при видаленні ролі");
+                      }
+                    }}>Delete</Button>
                   </Stack>
                 )
               }
@@ -212,7 +260,15 @@ export default function AdminPage() {
                 renderCell: (p) => (
                   <Stack direction="row" spacing={1}>
                     <Button startIcon={<Edit />} onClick={() => { setEditPerm(p.row); setPermForm(p.row); setOpenPerm(true); }}>Edit</Button>
-                    <Button color="error" startIcon={<Delete />} onClick={() => deletePermission(p.row.name).then(loadPermissions)}>Delete</Button>
+                    <Button color="error" startIcon={<Delete />} onClick={async () => {
+                      try {
+                        await deletePermission(p.row.name);
+                        loadPermissions();
+                      } catch (err) {
+                        console.error(err);
+                        alert("Помилка при видаленні permission");
+                      }
+                    }}>Delete</Button>
                   </Stack>
                 )
               }
@@ -249,7 +305,15 @@ export default function AdminPage() {
                 field: "actions", headerName: "Actions", width: 180,
                 renderCell: (p) => (
                   <Stack direction="row" spacing={1}>
-                    <Button color="error" startIcon={<Delete />} onClick={() => deleteRolePermission(p.row.role_name, p.row.permission_name).then(loadRolePerms)}>Delete</Button>
+                    <Button color="error" startIcon={<Delete />} onClick={async () => {
+                      try {
+                        await deleteRolePermission(p.row.role_name, p.row.permission_name);
+                        loadRolePerms();
+                      } catch (err) {
+                        console.error(err);
+                        alert("Помилка при видаленні role-permission");
+                      }
+                    }}>Delete</Button>
                   </Stack>
                 )
               }
