@@ -46,11 +46,11 @@ async def fetch_and_store_price(exchange: str, symbol: str):
                 price = float(ticker["c"][0])  # last trade price
 
         else:
-            logger.warning(f"❌ fetch_and_store_price not implemented for {exchange}")
+            log.warning(f"❌ fetch_and_store_price not implemented for {exchange}")
             return
 
         if price is None:
-            logger.warning(f"⚠️ No price received for {exchange}:{symbol}")
+            log.warning(f"⚠️ No price received for {exchange}:{symbol}")
             return
 
         # ---- Save to DB ----
@@ -65,13 +65,13 @@ async def fetch_and_store_price(exchange: str, symbol: str):
             await session.commit()
             await session.refresh(record)
 
-        logger.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
+        log.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
 
     except Exception as e:
-        logger.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
+        log.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
 
 async def refresh_symbols(client, exchange_id):
-    logging.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
+    log.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
 
     symbols = []
 
@@ -148,7 +148,7 @@ async def refresh_symbols(client, exchange_id):
                 ))
 
         else:
-            logging.warning(f"❌ refresh_symbols не реалізовано для {client['exchange_code']}")
+            log.warning(f"❌ refresh_symbols не реалізовано для {client['exchange_code']}")
             return
 
         async with SessionLocal() as session:
@@ -175,10 +175,10 @@ async def refresh_symbols(client, exchange_id):
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(symbols)} symbols оновлено/додано")
+        log.info(f"✅ [DONE] {len(symbols)} symbols оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_symbols error: {e}")
+        log.exception(f"❌ refresh_symbols error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
@@ -192,7 +192,7 @@ async def refresh_symbols(client, exchange_id):
 # refresh_limits
 # ---------------------------
 async def refresh_limits(client, exchange_id):
-    logging.info(f"🔄 [START] refresh_limits for {client['exchange_code']}")
+    log.info(f"🔄 [START] refresh_limits for {client['exchange_code']}")
 
     limits = []
     try:
@@ -244,10 +244,10 @@ async def refresh_limits(client, exchange_id):
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(limits)} limits оновлено/додано")
+        log.info(f"✅ [DONE] {len(limits)} limits оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_limits error: {e}")
+        log.exception(f"❌ refresh_limits error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
@@ -258,7 +258,7 @@ async def refresh_limits(client, exchange_id):
             await session.commit()
 
 async def refresh_fees(client, exchange_id):
-    logging.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
+    log.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
     fees_to_insert = []
 
     try:
@@ -374,10 +374,10 @@ async def refresh_fees(client, exchange_id):
 
             await session.commit()
 
-        logging.info(f"✅ [DONE] {len(fees_to_insert)} fees оновлено/додано")
+        log.info(f"✅ [DONE] {len(fees_to_insert)} fees оновлено/додано")
 
     except Exception as e:
-        logging.exception(f"❌ refresh_fees error: {e}")
+        log.exception(f"❌ refresh_fees error: {e}")
         async with SessionLocal() as session:
             session.add(ExchangeStatusHistory(
                 exchange_id=exchange_id,
