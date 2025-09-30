@@ -90,33 +90,52 @@ class Exchange(Base):
 
     def __repr__(self) -> str:
         return f"<Exchange {self.code} ({self.environment}) active={self.is_active}>"
-
-
 class ExchangeCredential(Base):
     __tablename__ = "exchange_credentials"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
-    label      = Column(Text)
-    is_service = Column(Boolean, nullable=False, server_default=text("true"))
-    is_active  = Column(Boolean, nullable=False, server_default=text("true"))
+    label: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_service: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
 
-    api_key        = Column(Text)
-    api_secret     = Column(Text)
-    api_passphrase = Column(Text)
-    subaccount     = Column(Text)
-    scopes         = Column(JSONB, server_default=text("'[]'::jsonb"))
+    api_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    api_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    api_passphrase: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    subaccount: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    scopes: Mapped[List[str]] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb"), nullable=False
+    )
 
-    secret_ref = Column(Text)
-    vault_path = Column(Text)
+    secret_ref: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    vault_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    valid_from = Column(TIMESTAMP(timezone=True))
-    valid_to   = Column(TIMESTAMP(timezone=True))
+    valid_from: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
+    valid_to: Mapped[Optional[dt.datetime]] = mapped_column(TIMESTAMP(timezone=True))
 
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
 
-    exchange = relationship("Exchange", back_populates="credentials")
+    # 🔗 relationships
+    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
+        back_populates="credentials"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ExchangeCredential {self.id} exchange={self.exchange_id} active={self.is_active}>"
+
 
 
 class ExchangeSymbol(Base):
