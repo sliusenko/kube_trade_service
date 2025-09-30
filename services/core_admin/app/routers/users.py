@@ -30,10 +30,12 @@ async def list_users(
 # ----------------------------------------------------------------
 @router.post("/", response_model=UserOut)
 async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session)):
-    hashed_pw = bcrypt.hash(user.password)
+    # отримуємо raw пароль
+    raw_password = user.password.get_secret_value()
+    hashed_pw = bcrypt.hash(raw_password)
 
     new_user = User(
-        user_id=str(uuid.uuid4()),
+        user_id=uuid.uuid4(),   # 👈 UUID об’єкт (не str)
         username=user.username,
         email=user.email,
         role=user.role,
@@ -56,7 +58,15 @@ async def update_user(user_id: UUID, data: UserUpdate, session: AsyncSession = D
     if not obj:
         raise HTTPException(status_code=404, detail="User not found")
 
-    for k, v in data.dict(exclude_unset=True).items():
+    update_data = data.dict(exclude_unset=True)
+
+    # обробляємо зміну пароля
+    if "new_password" in update_data and update_data["new_password"]:
+        raw_password = update_data.pop("new_password").get_secret_value()
+        obj.password_hash = bcrypt.hash(raw_password)
+
+    # решта полів
+    for k, v in update_data.items():
         setattr(obj, k, v)
 
     await session.commit()
