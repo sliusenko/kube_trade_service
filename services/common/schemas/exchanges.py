@@ -190,18 +190,26 @@ class ExchangeFeeOut(ExchangeFeeBase):
 # -----------------------------
 # ExchangeLimit (read-only)
 # -----------------------------
-class ExchangeLimitRead(BaseModel):
-    id: int
-    exchange_id: uuid.UUID
+class ExchangeLimitBase(BaseModel):
+    exchange_id: UUID
     limit_type: str
     interval_unit: str
     interval_num: int
     limit: int
-    raw_json: dict
-    fetched_at: datetime
+    raw_json: Dict[str, Any] = {}
+class ExchangeLimitCreate(ExchangeLimitBase):
+    pass
+class ExchangeLimitUpdate(BaseModel):
+    limit_type: Optional[str] = None
+    interval_unit: Optional[str] = None
+    interval_num: Optional[int] = None
+    limit: Optional[int] = None
+    raw_json: Optional[Dict[str, Any]] = None
+class ExchangeLimitOut(ExchangeLimitBase):
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
+    fetched_at: datetime
 
 # -----------------------------
 # ExchangeStatusHistory (read-only)
