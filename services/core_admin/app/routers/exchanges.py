@@ -89,7 +89,12 @@ async def add_credential(exchange_id: UUID, cred: ExchangeCredentialCreate, sess
     return new_cred
 
 @router.put("/{exchange_id}/credentials/{cred_id}", response_model=ExchangeCredentialRead,)
-async def update_credential(exchange_id: UUID, cred_id: UUID, cred: ExchangeCredentialCreate, session: AsyncSession = Depends(get_session),):
+async def update_credential(
+    exchange_id: UUID,
+    cred_id: UUID,
+    cred: ExchangeCredentialUpdate,
+    session: AsyncSession = Depends(get_session),
+):
     result = await session.execute(
         select(ExchangeCredential).where(
             ExchangeCredential.exchange_id == exchange_id,
