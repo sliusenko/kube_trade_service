@@ -3,7 +3,8 @@ import datetime as dt
 from typing import Optional, List, Dict, Any
 
 from sqlalchemy import (
-    Text, SmallInteger, Integer, Boolean, TIMESTAMP, text, JSON
+    BigInteger, SmallInteger, Text, Integer, Numeric, Boolean, TIMESTAMP,
+    ForeignKey, UniqueConstraint, text, JSON
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -135,41 +136,57 @@ class ExchangeCredential(Base):
 
     def __repr__(self) -> str:
         return f"<ExchangeCredential {self.id} exchange={self.exchange_id} active={self.is_active}>"
-
-
-
 class ExchangeSymbol(Base):
     __tablename__ = "exchange_symbols"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    exchange_id = Column(UUID(as_uuid=True), ForeignKey("exchanges.id", ondelete="CASCADE"))
-    symbol_id   = Column(Text, nullable=False)
-    symbol      = Column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    symbol_id: Mapped[str] = mapped_column(Text, nullable=False)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
 
-    base_asset  = Column(Text, nullable=False)
-    quote_asset = Column(Text, nullable=False)
-    status      = Column(Text)
-    type        = Column(Text, server_default="spot")
+    base_asset: Mapped[str] = mapped_column(Text, nullable=False)
+    quote_asset: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    type: Mapped[str] = mapped_column(Text, server_default=text("'spot'"))
 
-    base_precision  = Column(Integer)
-    quote_precision = Column(Integer)
-    step_size   = Column(Numeric)
-    tick_size   = Column(Numeric)
-    min_qty     = Column(Numeric)
-    max_qty     = Column(Numeric)
-    min_notional = Column(Numeric)
-    max_notional = Column(Numeric)
+    base_precision: Mapped[Optional[int]] = mapped_column(Integer)
+    quote_precision: Mapped[Optional[int]] = mapped_column(Integer)
+    step_size: Mapped[Optional[Decimal]] = mapped_column(Numeric)
+    tick_size: Mapped[Optional[Decimal]] = mapped_column(Numeric)
+    min_qty: Mapped[Optional[Decimal]] = mapped_column(Numeric)
+    max_qty: Mapped[Optional[Decimal]] = mapped_column(Numeric)
+    min_notional: Mapped[Optional[Decimal]] = mapped_column(Numeric)
+    max_notional: Mapped[Optional[Decimal]] = mapped_column(Numeric)
 
-    filters   = Column(JSONB, server_default="{}")
-    is_active = Column(Boolean, nullable=False, server_default="true")
+    filters: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB, server_default=text("'{}'::jsonb"), nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
 
-    fetched_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    fetched_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
 
-    exchange = relationship("Exchange", back_populates="symbols")
-    fees     = relationship("ExchangeFee", back_populates="symbol", cascade="all, delete-orphan")
+    # 🔗 relationships
+    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
+        back_populates="symbols"
+    )
+    fees: Mapped[List["ExchangeFee"]] = relationship(  # type: ignore[name-defined]
+        back_populates="symbol", cascade="all, delete-orphan"
+    )
 
-    __table_args__ = (UniqueConstraint("exchange_id", "symbol_id", name="uq_exchange_symbol"),)
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "symbol_id", name="uq_exchange_symbol"),
+    )
 
+    def __repr__(self) -> str:
+        return f"<ExchangeSymbol {self.symbol} ({self.base_asset}/{self.quote_asset}) active={self.is_active}>"
 
 class ExchangeFee(Base):
     __tablename__ = "exchange_fees"
