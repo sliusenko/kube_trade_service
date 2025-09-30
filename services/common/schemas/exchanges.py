@@ -1,8 +1,8 @@
 from datetime import datetime
 import uuid
-from typing import Optional, Literal
-
-from pydantic import BaseModel, Field
+from typing import Optional, Literal, Dict, Any
+from uuid import UUID
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import (
     Column, BigInteger, Numeric, Text, Boolean, Integer, SmallInteger,
     ForeignKey, TIMESTAMP, UniqueConstraint, text
@@ -16,61 +16,66 @@ from common.models.base import Base
 # Exchange
 # -----------------------------
 class ExchangeBase(BaseModel):
-    code: str = Field(..., description="Unique code for the exchange", example="BINANCE")
-    name: str = Field(..., description="Full name of the exchange", example="Binance")
+    code: str = Field(..., min_length=2, max_length=20)
+    name: str
+    kind: str = "spot"
+    environment: str = "prod"
 
-    kind: Literal["spot", "futures", "margin"] = Field(
-        default="spot", description="Exchange type"
-    )
-    environment: Literal["prod", "dev", "test"] = Field(
-        default="prod", description="Environment"
-    )
+    base_url_public: Optional[str] = None
+    base_url_private: Optional[str] = None
+    ws_public_url: Optional[str] = None
+    ws_private_url: Optional[str] = None
+    data_feed_url: Optional[str] = None
 
-    base_url_public: Optional[str] = Field(
-        None, description="Public REST API URL", example="https://api.binance.com"
-    )
-    base_url_private: Optional[str] = Field(None, description="Private REST API URL")
-    ws_public_url: Optional[str] = Field(None, description="Public WebSocket URL")
-    ws_private_url: Optional[str] = Field(None, description="Private WebSocket URL")
-    data_feed_url: Optional[str] = Field(None, description="Custom data feed URL")
+    fetch_symbols_interval_min: int = 60
+    fetch_filters_interval_min: int = 1440
+    fetch_limits_interval_min: int = 1440
+    fetch_fees_interval_min: int = 1440
 
-    fetch_symbols_interval_min: Optional[int] = Field(
-        60, description="Interval (minutes) to fetch symbols"
-    )
-    fetch_filters_interval_min: Optional[int] = Field(
-        1440, description="Interval (minutes) to fetch filters"
-    )
-    fetch_limits_interval_min: Optional[int] = Field(
-        1440, description="Interval (minutes) to fetch limits"
-    )
-    fetch_fees_interval_min: Optional[int] = Field(
-        1440, description="Interval (minutes) to fetch fees"
-    )
+    rate_limit_per_min: Optional[int] = None
+    recv_window_ms: int = 5000
+    request_timeout_ms: int = 10000
 
-    is_active: Optional[bool] = Field(True, description="Is this exchange active?")
+    is_active: bool = True
+
+    status: Optional[str] = None
+    status_msg: Optional[str] = None
+
+    features: Dict[str, Any] = {}
+    extra: Dict[str, Any] = {}
 class ExchangeCreate(ExchangeBase):
     pass
 class ExchangeUpdate(BaseModel):
-    name: Optional[str]
-    kind: Optional[Literal["spot", "futures", "margin"]]
-    environment: Optional[str]
-    base_url_public: Optional[str]
-    base_url_private: Optional[str]
-    ws_public_url: Optional[str]
-    ws_private_url: Optional[str]
-    data_feed_url: Optional[str]
-    fetch_symbols_interval_min: Optional[int]
-    fetch_filters_interval_min: Optional[int]
-    fetch_limits_interval_min: Optional[int]
-    fetch_fees_interval_min: Optional[int]
-    is_active: Optional[bool]
-class ExchangeRead(ExchangeBase):
-    id: uuid.UUID
+    name: Optional[str] = None
+    kind: Optional[str] = None
+    environment: Optional[str] = None
+    base_url_public: Optional[str] = None
+    base_url_private: Optional[str] = None
+    ws_public_url: Optional[str] = None
+    ws_private_url: Optional[str] = None
+    data_feed_url: Optional[str] = None
+    fetch_symbols_interval_min: Optional[int] = None
+    fetch_filters_interval_min: Optional[int] = None
+    fetch_limits_interval_min: Optional[int] = None
+    fetch_fees_interval_min: Optional[int] = None
+    rate_limit_per_min: Optional[int] = None
+    recv_window_ms: Optional[int] = None
+    request_timeout_ms: Optional[int] = None
+    is_active: Optional[bool] = None
+    status: Optional[str] = None
+    status_msg: Optional[str] = None
+    features: Optional[Dict[str, Any]] = None
+    extra: Optional[Dict[str, Any]] = None
+class ExchangeOut(ExchangeBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
+    last_symbols_refresh_at: Optional[datetime] = None
+    last_filters_refresh_at: Optional[datetime] = None
+    last_fees_refresh_at: Optional[datetime] = None
+    last_limits_refresh_at: Optional[datetime] = None
 
 # -----------------------------
 # ExchangeCredential
