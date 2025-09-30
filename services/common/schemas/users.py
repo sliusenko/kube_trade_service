@@ -1,29 +1,40 @@
-from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime
 from uuid import UUID
+from datetime import datetime
+from pydantic import BaseModel, EmailStr, Field, SecretStr, ConfigDict
 
 # -----------------------------
 # User
 # -----------------------------
 class UserBase(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    email: EmailStr
+    role: Optional[str] = None
+    is_active: bool = True
+
+
+class UserCreate(UserBase):
+    # приймаємо пароль у create, а в БД зберігаємо hash
+    password: SecretStr = Field(min_length=8, max_length=128)
+
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=64)
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    new_password: Optional[SecretStr] = Field(default=None, min_length=8, max_length=128)
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
     username: str
     email: EmailStr
     role: Optional[str] = None
-    is_active: Optional[bool] = True
-class UserCreate(UserBase):
-    password: str
-class UserUpdate(BaseModel):
-    username: Optional[str]
-    email: Optional[EmailStr]
-    role: Optional[str]
-    is_active: Optional[bool]
-class UserOut(UserBase):
-    user_id: UUID
     created_at: datetime
-
-    class Config:
-        from_attributes = True
+    is_active: bool
 
 # -----------------------------
 # Permission
