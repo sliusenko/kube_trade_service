@@ -50,30 +50,18 @@ class RoleOut(BaseModel):
 # Permission
 # -----------------------------
 class PermissionBase(BaseModel):
-    name: str
+    name: str = Field(min_length=2, max_length=50)
     description: Optional[str] = None
 class PermissionCreate(PermissionBase):
     pass
 class PermissionUpdate(BaseModel):
-    description: Optional[str]
-class PermissionOut(PermissionBase):
-    class Config:
-        from_attributes = True
+    description: Optional[str] = None
+class PermissionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
-# -----------------------------
-# Role
-# -----------------------------
-class RoleBase(BaseModel):
     name: str
     description: Optional[str] = None
-class RoleCreate(RoleBase):
-    pass
-class RoleUpdate(BaseModel):
-    description: Optional[str]
-class RoleOut(RoleBase):
-    class Config:
-        from_attributes = True
-        
+
 # -----------------------------
 # Role_Permission
 # -----------------------------
