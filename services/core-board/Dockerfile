@@ -17,5 +17,7 @@ COPY services/common ./common
 
 EXPOSE 8000
 
+ENV PYTHONPATH=/app
+
 CMD ["uvicorn", "core_board.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
