@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 import uuid
 from typing import Optional, List, Literal, Dict, Any
 from uuid import UUID
@@ -119,6 +120,50 @@ class ExchangeCredentialOut(ExchangeCredentialBase):
 
     id: UUID
     created_at: datetime
+
+# -----------------------------
+# ExchangeSymbol (read-only)
+# -----------------------------
+class ExchangeSymbolBase(BaseModel):
+    exchange_id: UUID
+    symbol_id: str
+    symbol: str
+    base_asset: str
+    quote_asset: str
+    status: Optional[str] = None
+    type: str = "spot"
+
+    base_precision: Optional[int] = None
+    quote_precision: Optional[int] = None
+    step_size: Optional[Decimal] = None
+    tick_size: Optional[Decimal] = None
+    min_qty: Optional[Decimal] = None
+    max_qty: Optional[Decimal] = None
+    min_notional: Optional[Decimal] = None
+    max_notional: Optional[Decimal] = None
+
+    filters: Dict[str, Any] = {}
+    is_active: bool = True
+class ExchangeSymbolCreate(ExchangeSymbolBase):
+    pass
+class ExchangeSymbolUpdate(BaseModel):
+    status: Optional[str] = None
+    type: Optional[str] = None
+    base_precision: Optional[int] = None
+    quote_precision: Optional[int] = None
+    step_size: Optional[Decimal] = None
+    tick_size: Optional[Decimal] = None
+    min_qty: Optional[Decimal] = None
+    max_qty: Optional[Decimal] = None
+    min_notional: Optional[Decimal] = None
+    max_notional: Optional[Decimal] = None
+    filters: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+class ExchangeSymbolOut(ExchangeSymbolBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    fetched_at: datetime
 
 # -----------------------------
 # ExchangeFee (read-only)
