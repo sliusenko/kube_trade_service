@@ -5,21 +5,26 @@ from common.deps.config import CoreAdminSettings
 settings = CoreAdminSettings()
 router = APIRouter(prefix="/config", tags=["config"])
 
-CONFIG_BASE_URL = settings.CONFIG_BASE_URL.rstrip("/")
+BASE_URL = settings.CONFIG_BASE_URL.rstrip("/")
 
 
 async def forward_request(method: str, path: str, data: dict | None = None):
-    url = f"{CONFIG_BASE_URL}{path}"
+    url = f"{BASE_URL}{path}"
     async with httpx.AsyncClient(timeout=20) as client:
         try:
             resp = await client.request(method, url, json=data)
             resp.raise_for_status()
-            return resp.json()
+            # Якщо є JSON
+            if resp.headers.get("content-type", "").startswith("application/json"):
+                return resp.json()
+            # Якщо немає тіла, але є статус
+            if not resp.text:
+                return {"status": resp.status_code}
+            return {"raw": resp.text}
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
         except Exception as e:
             raise HTTPException(status_code=502, detail=str(e))
-
 
 # -------- Timeframes --------
 @router.get("/timeframes")

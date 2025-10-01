@@ -6,12 +6,15 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # ⚠️ Підстав свій фабричний метод створення сесії:
 # Якщо у тебе async_session() — заміни на нього.
 from common.deps.db import AsyncSessionLocal
-
+from core_news.app.routers import news
 from core_news.app.services.news_service import check_news_and_halt_trading
 
 log = logging.getLogger(__name__)
 app = FastAPI(title="core-news")
 scheduler = AsyncIOScheduler()
+
+# Register routers
+app.include_router(news.router)
 
 # ——— Health ———
 @app.get("/healthz")
