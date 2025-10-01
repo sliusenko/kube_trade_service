@@ -12,6 +12,7 @@ class Settings:
     NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY")
 
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
+    UPDATE_NEWS_PRICES_INTERVAL_HOURS: int = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "10"))
 
     @property
     def POSTGRES_DSN(self) -> str:
