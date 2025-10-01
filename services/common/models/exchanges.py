@@ -139,14 +139,21 @@ class ExchangeCredential(Base):
 class ExchangeSymbol(Base):
     __tablename__ = "exchange_symbols"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    symbol_id: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # # якщо хочеш, щоб унікальність була глобально:
+    # symbol: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+
     exchange_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("exchanges.id", ondelete="CASCADE"),
         nullable=False,
     )
-    symbol_id: Mapped[str] = mapped_column(Text, nullable=False)
-    symbol: Mapped[str] = mapped_column(Text, nullable=False)
 
     base_asset: Mapped[str] = mapped_column(Text, nullable=False)
     quote_asset: Mapped[str] = mapped_column(Text, nullable=False)
@@ -174,10 +181,8 @@ class ExchangeSymbol(Base):
     )
 
     # 🔗 relationships
-    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
-        back_populates="symbols"
-    )
-    fees: Mapped[List["ExchangeFee"]] = relationship(  # type: ignore[name-defined]
+    exchange: Mapped["Exchange"] = relationship(back_populates="symbols")
+    fees: Mapped[List["ExchangeFee"]] = relationship(
         back_populates="symbol", cascade="all, delete-orphan"
     )
 
@@ -196,8 +201,8 @@ class ExchangeFee(Base):
         ForeignKey("exchanges.id", ondelete="CASCADE"),
         nullable=False,
     )
-    symbol_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger,
+    symbol_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
         ForeignKey("exchange_symbols.id", ondelete="CASCADE"),
         nullable=True,
     )
@@ -211,11 +216,11 @@ class ExchangeFee(Base):
     )
 
     # 🔗 relationships
-    exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
-        back_populates="fees"
-    )
-    symbol: Mapped[Optional["ExchangeSymbol"]] = relationship(  # type: ignore[name-defined]
-        back_populates="fees"
+    exchange: Mapped["Exchange"] = relationship(back_populates="fees")
+    symbol: Mapped[Optional["ExchangeSymbol"]] = relationship(back_populates="fees")
+
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "symbol_id", "volume_threshold", name="uq_exchange_fee"),
     )
 
     def __repr__(self) -> str:
@@ -245,6 +250,10 @@ class ExchangeLimit(Base):
     # 🔗 relationships
     exchange: Mapped["Exchange"] = relationship(  # type: ignore[name-defined]
         back_populates="limits"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "limit_type", "interval_unit", "interval_num", name="uq_exchange_limit"),
     )
 
     def __repr__(self) -> str:

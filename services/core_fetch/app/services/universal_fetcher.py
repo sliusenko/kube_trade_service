@@ -355,7 +355,12 @@ async def refresh_fees(client, exchange_id):
             for fee in fees_to_insert:
                 stmt = insert(ExchangeFee).values(**fee).on_conflict_do_update(
                     index_elements=["exchange_id", "symbol_id", "volume_threshold"],
-                    set_={**fee, "fetched_at": func.now()}
+                    set_={
+                        "volume_threshold": fee["volume_threshold"],
+                        "maker_fee": fee["maker_fee"],
+                        "taker_fee": fee["taker_fee"],
+                        "fetched_at": func.now()
+                    }
                 )
                 await session.execute(stmt)
 
