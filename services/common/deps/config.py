@@ -8,7 +8,8 @@ class Settings:
     POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "trade")
 
-    AUTH_CRYPTONEW_TOKEN: str = os.getenv("AUTH_CRYPTONEW_TOKEN", "TOKEN")
+    # ⚡ нове поле для core-news (alias для NewsAPI)
+    NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY")
 
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
 
