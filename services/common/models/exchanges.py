@@ -23,6 +23,10 @@ class Exchange(Base):
     kind: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'spot'"))
     environment: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'prod'"))
 
+    use_service_symbol: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+
     base_url_public: Mapped[Optional[str]] = mapped_column(Text)
     base_url_private: Mapped[Optional[str]] = mapped_column(Text)
     ws_public_url: Mapped[Optional[str]] = mapped_column(Text)

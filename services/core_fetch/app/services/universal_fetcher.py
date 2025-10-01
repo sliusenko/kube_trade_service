@@ -354,16 +354,22 @@ async def refresh_limits(client: Dict[str, Any], exchange_id: uuid.UUID) -> None
 async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
     """
     Upsert fees into exchange_fees.
-    For Binance: single row without symbol_id (None).
-    For Kraken: per-symbol fee ladder; symbol_id is UUID FK -> exchange_symbols.id.
-    Uniqueness: (exchange_id, symbol_id, volume_threshold).
+    Якщо use_service_symbol = true → всі комісії пишемо в один сервісний символ.
+    Інакше працюємо як зараз (per-symbol).
     """
     log.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
     fees_to_insert: List[Dict[str, Any]] = []
 
     try:
+        async with SessionLocal() as session:
+            exch = await session.execute(
+                select(Exchange.use_service_symbol).where(Exchange.id == exchange_id)
+            )
+            use_service = exch.scalar_one()
+
         ex_code = client["exchange_code"].upper()
 
+        # ---------------- BINANCE ----------------
         if ex_code == "BINANCE":
             url = "/api/v3/account"
             resp = await client["http"].get(url)
@@ -371,16 +377,33 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
             maker = float(data.get("makerCommission", 10)) / 10000
             taker = float(data.get("takerCommission", 10)) / 10000
 
-            fees_to_insert.append(
-                dict(
-                    exchange_id=exchange_id,
-                    symbol_id=None,                # біржа-рівневі комісії
-                    volume_threshold=Decimal(0),
-                    maker_fee=Decimal(maker),
-                    taker_fee=Decimal(taker),
+            if use_service:
+                async with SessionLocal() as session:
+                    service_id = await ensure_service_symbol(session, exchange_id)
+                    await session.commit()
+                fees_to_insert.append(
+                    dict(
+                        exchange_id=exchange_id,
+                        symbol_id=service_id,
+                        volume_threshold=Decimal(0),
+                        maker_fee=Decimal(maker),
+                        taker_fee=Decimal(taker),
+                    )
                 )
-            )
+            else:
+                # логіка як у Kraken: можна робити на всі символи (але Binance не віддає fees по символах)
+                # тоді залишаємо один запис з symbol_id=None (fallback)
+                fees_to_insert.append(
+                    dict(
+                        exchange_id=exchange_id,
+                        symbol_id=None,
+                        volume_threshold=Decimal(0),
+                        maker_fee=Decimal(maker),
+                        taker_fee=Decimal(taker),
+                    )
+                )
 
+        # ---------------- KRAKEN ----------------
         elif ex_code == "KRAKEN":
             url = "/0/public/AssetPairs"
             resp = await client["http"].get(url)
@@ -388,7 +411,6 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
 
             async with SessionLocal() as session:
                 for key, s in data.get("result", {}).items():
-                    # 1) ensure / lookup symbol UUID
                     symbol_obj = await session.execute(
                         select(ExchangeSymbol.id).where(
                             ExchangeSymbol.exchange_id == exchange_id,
@@ -398,17 +420,11 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                     symbol_uuid = symbol_obj.scalar_one_or_none()
 
                     if not symbol_uuid:
-                        # якщо немає символу — створюємо
+                        # створюємо символ якщо немає
                         lot_decimals = int(s.get("lot_decimals", 0))
                         pair_decimals = int(s.get("pair_decimals", lot_decimals))
-
-                        step_size: Optional[str] = None
-                        tick_size: Optional[str] = None
-                        if lot_decimals:
-                            step_size = f"1e-{lot_decimals}"
-                        if pair_decimals:
-                            tick_size = f"1e-{pair_decimals}"
-
+                        step_size = f"1e-{lot_decimals}" if lot_decimals else None
+                        tick_size = f"1e-{pair_decimals}" if pair_decimals else None
                         min_qty = s.get("ordermin")
                         min_qty = str(Decimal(min_qty)) if min_qty else None
 
@@ -431,7 +447,6 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                             filters=s,
                         )
 
-                        # upsert symbol, then RETURNING id
                         stmt = (
                             insert(ExchangeSymbol)
                             .values(**new_symbol)
@@ -445,7 +460,6 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                         res = await session.execute(stmt)
                         symbol_uuid = res.scalar_one()
 
-                    # 2) fee ladder
                     fees = s.get("fees", [])
                     fees_maker = s.get("fees_maker", [])
 
@@ -456,17 +470,16 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                         fees_to_insert.append(
                             dict(
                                 exchange_id=exchange_id,
-                                symbol_id=symbol_uuid,                        # UUID FK
+                                symbol_id=symbol_uuid,
                                 volume_threshold=Decimal(volume),
                                 maker_fee=Decimal(maker) if maker is not None else None,
                                 taker_fee=Decimal(taker),
                             )
                         )
 
-        # ---- Write to DB ----
+        # ---------------- SAVE ----------------
         async with SessionLocal() as session:
             for fee in fees_to_insert:
-                # не оновлюємо ключові поля в set_
                 stmt = (
                     insert(ExchangeFee)
                     .values(**fee)
@@ -483,9 +496,9 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                 await session.execute(stmt)
 
             await session.execute(
-                update(Exchange)
-                .where(Exchange.id == exchange_id)
-                .values(last_fees_refresh_at=func.now())
+                update(Exchange).where(Exchange.id == exchange_id).values(
+                    last_fees_refresh_at=func.now()
+                )
             )
 
             session.add(
@@ -513,3 +526,34 @@ async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
                 )
             )
             await session.commit()
+
+async def ensure_service_symbol(session: AsyncSession, exchange_id: uuid.UUID) -> uuid.UUID:
+    """Знаходить або створює сервісний символ (__SERVICE__) для біржі."""
+    res = await session.execute(
+        select(ExchangeSymbol.id).where(
+            ExchangeSymbol.exchange_id == exchange_id,
+            ExchangeSymbol.symbol_id == "__SERVICE__"
+        )
+    )
+    service_id = res.scalar_one_or_none()
+
+    if service_id:
+        return service_id
+
+    stmt = (
+        insert(ExchangeSymbol)
+        .values(
+            exchange_id=exchange_id,
+            symbol_id="__SERVICE__",
+            symbol="SERVICE",
+            base_asset="-",
+            quote_asset="-",
+            status="SERVICE",
+            type="service",
+            is_active=True,
+            filters={}
+        )
+        .returning(ExchangeSymbol.id)
+    )
+    res = await session.execute(stmt)
+    return res.scalar_one()

@@ -20,6 +20,7 @@ class ExchangeBase(BaseModel):
     name: str
     kind: str = "spot"
     environment: str = "prod"
+    use_service_symbol: bool = False
 
     base_url_public: Optional[str] = None
     base_url_private: Optional[str] = None
@@ -49,6 +50,7 @@ class ExchangeUpdate(BaseModel):
     name: Optional[str] = None
     kind: Optional[str] = None
     environment: Optional[str] = None
+    use_service_symbol: Optional[bool] = None
     base_url_public: Optional[str] = None
     base_url_private: Optional[str] = None
     ws_public_url: Optional[str] = None
@@ -152,7 +154,7 @@ class ExchangeSymbolUpdate(BaseModel):
 class ExchangeSymbolOut(ExchangeSymbolBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     fetched_at: datetime
 
 # -----------------------------
@@ -160,14 +162,14 @@ class ExchangeSymbolOut(ExchangeSymbolBase):
 # -----------------------------
 class ExchangeFeeBase(BaseModel):
     exchange_id: UUID
-    symbol_id: Optional[int] = None
+    symbol_id: Optional[UUID] = None
     volume_threshold: Decimal
     maker_fee: Optional[Decimal] = None
     taker_fee: Optional[Decimal] = None
 class ExchangeFeeCreate(ExchangeFeeBase):
     pass
 class ExchangeFeeUpdate(BaseModel):
-    symbol_id: Optional[int] = None
+    symbol_id: Optional[UUID] = None
     volume_threshold: Optional[Decimal] = None
     maker_fee: Optional[Decimal] = None
     taker_fee: Optional[Decimal] = None
