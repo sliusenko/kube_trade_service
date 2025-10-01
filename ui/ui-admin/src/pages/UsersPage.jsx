@@ -31,12 +31,30 @@ export default function AdminPage() {
   const [openUser, setOpenUser] = useState(false);
   const [editUser, setEditUser] = useState(null);
 
-  const loadUsers = () => getUsers().then(setUsers);
+  // Password validation state
+  const [passwordError, setPasswordError] = useState("");
 
+  const loadUsers = () => getUsers().then(setUsers);
   useEffect(() => { loadUsers(); }, []);
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setUserForm({ ...userForm, password: value });
+
+    if (!editUser && value.length > 0 && value.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+    } else {
+      setPasswordError("");
+    }
+  };
 
   const handleSaveUser = async () => {
     try {
+      if (!editUser && userForm.password.length < 8) {
+        alert("Password must be at least 8 characters long");
+        return;
+      }
+
       if (editUser) {
         const payload = {
           email: userForm.email,
@@ -54,7 +72,8 @@ export default function AdminPage() {
       setOpenUser(false);
     } catch (err) {
       console.error(err);
-      alert("Помилка при збереженні користувача");
+      const msg = err?.response?.data?.detail || err.message || "Помилка при збереженні користувача";
+      alert(msg);
     }
   };
 
@@ -139,7 +158,12 @@ export default function AdminPage() {
       {tab === 0 && (
         <>
           <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-            <Button startIcon={<Add />} onClick={() => { setEditUser(null); setUserForm({ username: "", email: "", role: "user", password: "", is_active: true }); setOpenUser(true); }}>
+            <Button startIcon={<Add />} onClick={() => {
+              setEditUser(null);
+              setUserForm({ username: "", email: "", role: "user", password: "", is_active: true });
+              setPasswordError("");
+              setOpenUser(true);
+            }}>
               Add User
             </Button>
           </Stack>
@@ -156,7 +180,12 @@ export default function AdminPage() {
                 field: "actions", headerName: "Actions", width: 180,
                 renderCell: (p) => (
                   <Stack direction="row" spacing={1}>
-                    <Button startIcon={<Edit />} onClick={() => { setEditUser(p.row); setUserForm({ ...p.row, password: "" }); setOpenUser(true); }}>Edit</Button>
+                    <Button startIcon={<Edit />} onClick={() => {
+                      setEditUser(p.row);
+                      setUserForm({ ...p.row, password: "" });
+                      setPasswordError("");
+                      setOpenUser(true);
+                    }}>Edit</Button>
                     <Button color="error" startIcon={<Delete />} onClick={async () => {
                       try {
                         await deleteUser(p.row.user_id);
@@ -175,15 +204,29 @@ export default function AdminPage() {
           <Dialog open={openUser} onClose={() => setOpenUser(false)}>
             <DialogTitle>{editUser ? "Edit User" : "Add User"}</DialogTitle>
             <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-              <TextField label="Username" value={userForm.username} onChange={e => setUserForm({ ...userForm, username: e.target.value })} disabled={!!editUser} />
-              <TextField label="Email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
+              <TextField
+                label="Username"
+                value={userForm.username}
+                onChange={e => setUserForm({ ...userForm, username: e.target.value })}
+                disabled={!!editUser}
+              />
+              <TextField
+                label="Email"
+                value={userForm.email}
+                onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+              />
               <TextField
                 label={editUser ? "Password (leave blank to keep unchanged)" : "Password"}
                 type="password"
                 value={userForm.password}
-                onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                onChange={handlePasswordChange}
+                error={!!passwordError}
+                helperText={passwordError}
               />
-              <Select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}>
+              <Select
+                value={userForm.role}
+                onChange={e => setUserForm({ ...userForm, role: e.target.value })}
+              >
                 {roles.map((r) => (
                   <MenuItem key={r.name} value={r.name}>{r.name}</MenuItem>
                 ))}
@@ -191,7 +234,12 @@ export default function AdminPage() {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setOpenUser(false)}>Cancel</Button>
-              <Button onClick={handleSaveUser}>Save</Button>
+              <Button
+                onClick={handleSaveUser}
+                disabled={!editUser && (userForm.password.length < 8 || !!passwordError)}
+              >
+                Save
+              </Button>
             </DialogActions>
           </Dialog>
         </>

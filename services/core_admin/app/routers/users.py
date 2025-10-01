@@ -5,6 +5,7 @@ from passlib.hash import bcrypt
 from typing import List
 from uuid import UUID
 import uuid
+import hashlib
 
 from common.deps.db import get_session
 from common.models.users import User
@@ -12,6 +13,16 @@ from common.schemas.users import UserCreate, UserUpdate, UserOut
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
+# ----------------------------------------------------------------
+# helpers
+# ----------------------------------------------------------------
+def hash_password(password: str) -> str:
+    """Безпечне хешування: SHA-256 → bcrypt"""
+    digest = hashlib.sha256(password.encode("utf-8")).digest()
+    return bcrypt.hash(digest)
+def verify_password(password: str, hashed: str) -> bool:
+    digest = hashlib.sha256(password.encode("utf-8")).digest()
+    return bcrypt.verify(digest, hashed)
 
 # ----------------------------------------------------------------
 # List users
@@ -24,18 +35,16 @@ async def list_users(
     res = await session.execute(select(User).limit(limit))
     return res.scalars().all()
 
-
 # ----------------------------------------------------------------
 # Create user
 # ----------------------------------------------------------------
 @router.post("/", response_model=UserOut)
 async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session)):
-    # отримуємо raw пароль
     raw_password = user.password.get_secret_value()
-    hashed_pw = bcrypt.hash(raw_password)
+    hashed_pw = hash_password(raw_password)
 
     new_user = User(
-        user_id=uuid.uuid4(),   # 👈 UUID об’єкт (не str)
+        user_id=uuid.uuid4(),
         username=user.username,
         email=user.email,
         role=user.role,
@@ -48,7 +57,6 @@ async def create_user(user: UserCreate, session: AsyncSession = Depends(get_sess
     await session.refresh(new_user)
     return new_user
 
-
 # ----------------------------------------------------------------
 # Update user
 # ----------------------------------------------------------------
@@ -60,19 +68,16 @@ async def update_user(user_id: UUID, data: UserUpdate, session: AsyncSession = D
 
     update_data = data.dict(exclude_unset=True)
 
-    # обробляємо зміну пароля
     if "new_password" in update_data and update_data["new_password"]:
         raw_password = update_data.pop("new_password").get_secret_value()
-        obj.password_hash = bcrypt.hash(raw_password)
+        obj.password_hash = hash_password(raw_password)
 
-    # решта полів
     for k, v in update_data.items():
         setattr(obj, k, v)
 
     await session.commit()
     await session.refresh(obj)
     return obj
-
 
 # ----------------------------------------------------------------
 # Delete user
