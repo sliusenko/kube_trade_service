@@ -46,7 +46,7 @@ const TabButton = ({ label, active, onClick }) => (
 export default function ExchangesPage() {
   const [activeTab, setActiveTab] = useState("EXCHANGES");
   const [exchanges, setExchanges] = useState([]);
-  const [selectedExchange, setSelectedExchange] = useState("");
+  const [selectedExchange, setSelectedExchange] = useState(""); // тільки id
   const [formData, setFormData] = useState({});
   const [symbols, setSymbols] = useState([]);
   const [limits, setLimits] = useState([]);
@@ -255,7 +255,6 @@ export default function ExchangesPage() {
                 <TableCell>Kind</TableCell>
                 <TableCell>Environment</TableCell>
                 <TableCell>Rate Limit</TableCell>
-                <TableCell>Use service symbol for fees</TableCell>
                 <TableCell>Active</TableCell>
               </TableRow>
             </TableHead>
@@ -271,7 +270,6 @@ export default function ExchangesPage() {
                   <TableCell>{ex.kind}</TableCell>
                   <TableCell>{ex.environment}</TableCell>
                   <TableCell>{ex.rate_limit_per_min || "-"}</TableCell>
-                  <TableCell>{ex.use_service_symbol ? "Yes" : "No"}</TableCell>
                   <TableCell>{ex.is_active ? "Yes" : "No"}</TableCell>
                 </TableRow>
               ))}
