@@ -1,29 +1,42 @@
+import uuid
 import logging
-import requests
 from decimal import Decimal
-from sqlalchemy import delete, update, func, select
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
+
+import httpx
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
-from common.models import ExchangeSymbol, Exchange, ExchangeLimit, ExchangeStatusHistory, ExchangeFee
-from common.models.markethistory import PriceHistory
+
 from common.deps.session import SessionLocal
-from binance.client import Client as BinanceClient
-from datetime import datetime, timezone
-import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
+from common.models import (
+    Exchange,
+    ExchangeSymbol,
+    ExchangeLimit,
+    ExchangeStatusHistory,
+    ExchangeFee,
+)
+from common.models.markethistory import PriceHistory
 
 log = logging.getLogger(__name__)
 
-async def fetch_and_store_price(exchange: str, symbol: str):
+# =========================
+# fetch_and_store_price
+# =========================
+async def fetch_and_store_price(exchange: str, symbol: str) -> None:
     """
     Fetch latest price for a given symbol from an exchange and store in DB.
-    Currently supports Binance and Kraken.
+    Expects `symbol` as the exchange's symbol code (e.g. "BTCUSDT" for Binance or "XXBTZUSD" for Kraken).
+    Saves PriceHistory.symbol as UUID (FK -> exchange_symbols.id).
     """
     try:
-        price: float | None = None
+        price: Optional[float] = None
+
+        ex_code = exchange.upper()
 
         # ---- Binance ----
-        if exchange.upper() == "BINANCE":
+        if ex_code == "BINANCE":
             url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(url)
@@ -32,7 +45,7 @@ async def fetch_and_store_price(exchange: str, symbol: str):
                 price = float(data["price"])
 
         # ---- Kraken ----
-        elif exchange.upper() == "KRAKEN":
+        elif ex_code == "KRAKEN":
             url = f"https://api.kraken.com/0/public/Ticker?pair={symbol}"
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(url)
@@ -41,7 +54,7 @@ async def fetch_and_store_price(exchange: str, symbol: str):
                 result = data.get("result", {})
                 if not result:
                     raise ValueError(f"No ticker data for {symbol} from Kraken")
-                # Kraken returns dict with dynamic key (e.g. "XXBTZUSD")
+                # Kraken returns dict with a dynamic key (e.g. "XXBTZUSD")
                 ticker = list(result.values())[0]
                 price = float(ticker["c"][0])  # last trade price
 
@@ -54,36 +67,62 @@ async def fetch_and_store_price(exchange: str, symbol: str):
             return
 
         # ---- Save to DB ----
-        async with SessionLocal() as session:  # type: AsyncSession
+        async with SessionLocal() as session:
+            # 1) lookup exchange_id (UUID)
+            exch = await session.execute(
+                select(Exchange.id).where(Exchange.code == ex_code)
+            )
+            exchange_id = exch.scalar_one_or_none()
+            if not exchange_id:
+                raise ValueError(f"Exchange {exchange} not found in DB")
+
+            # 2) lookup symbol UUID by exchange_id + (symbol_id OR symbol text)
+            sym = await session.execute(
+                select(ExchangeSymbol.id).where(
+                    ExchangeSymbol.exchange_id == exchange_id,
+                    (ExchangeSymbol.symbol_id == symbol) | (ExchangeSymbol.symbol == symbol),
+                )
+            )
+            symbol_uuid = sym.scalar_one_or_none()
+            if not symbol_uuid:
+                raise ValueError(f"Symbol {symbol} not found in DB for {exchange}")
+
+            # 3) write price history (PriceHistory.symbol expects UUID FK)
             record = PriceHistory(
                 timestamp=datetime.now(timezone.utc),
-                exchange=exchange,
-                symbol=symbol,
+                exchange=ex_code,         # текстовий код біржі
+                symbol=symbol_uuid,       # UUID -> FK
                 price=price,
             )
             session.add(record)
             await session.commit()
-            await session.refresh(record)
 
         log.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
 
     except Exception as e:
         log.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
-
-async def refresh_symbols(client, exchange_id):
+# =========================
+# refresh_symbols
+# =========================
+async def refresh_symbols(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
+    """
+    Pull symbols from exchange and upsert into exchange_symbols.
+    Uniqueness: (exchange_id, symbol_id [exchange-level string ID]).
+    """
     log.info(f"🔄 [START] refresh_symbols for {client['exchange_code']}")
-
-    symbols = []
+    symbols: List[Dict[str, Any]] = []
 
     try:
+        ex_code = client["exchange_code"].upper()
+
         # ---- Binance ----
-        if client["exchange_code"].upper() == "BINANCE":
+        if ex_code == "BINANCE":
             url = "/api/v3/exchangeInfo"
             resp = await client["http"].get(url)
             data = resp.json()
 
             for s in data.get("symbols", []):
-                if s["status"] != "TRADING":
+                if s.get("status") != "TRADING":
                     continue
 
                 filters = {f["filterType"]: f for f in s.get("filters", [])}
@@ -96,10 +135,10 @@ async def refresh_symbols(client, exchange_id):
                     min_notional = filters["NOTIONAL"].get("minNotional")
                     max_notional = filters["NOTIONAL"].get("maxNotional")
 
-                symbols.append(dict(
+                sym_row = dict(
                     exchange_id=exchange_id,
-                    symbol_id=s["symbol"],       # 👈 унікальний ключ від біржі
-                    symbol=f"{s['baseAsset']}/{s['quoteAsset']}",
+                    symbol_id=s["symbol"],                           # біржовий рядковий ID (e.g. "BTCUSDT")
+                    symbol=f"{s['baseAsset']}/{s['quoteAsset']}",    # людиночитний
                     base_asset=s["baseAsset"],
                     quote_asset=s["quoteAsset"],
                     status=s["status"],
@@ -113,65 +152,88 @@ async def refresh_symbols(client, exchange_id):
                     min_notional=min_notional,
                     max_notional=max_notional,
                     filters=s.get("filters", []),
-                ))
+                )
+                symbols.append(sym_row)
 
         # ---- Kraken ----
-        elif client["exchange_code"].upper() == "KRAKEN":
+        elif ex_code == "KRAKEN":
             url = "/0/public/AssetPairs"
             resp = await client["http"].get(url)
             data = resp.json()
 
             for key, s in data.get("result", {}).items():
                 lot_decimals = int(s.get("lot_decimals", 0))
-                step_size = Decimal(f"1e-{lot_decimals}") if lot_decimals else None
-                min_qty = Decimal(s.get("ordermin")) if s.get("ordermin") else None
                 pair_decimals = int(s.get("pair_decimals", lot_decimals))
-                tick_size = Decimal(f"1e-{pair_decimals}") if pair_decimals else None
 
-                symbols.append(dict(
+                # Numeric-типи бажано як Decimal/str (сумісно з Numeric у моделі)
+                step_size: Optional[str] = None
+                tick_size: Optional[str] = None
+                if lot_decimals:
+                    step_size = f"1e-{lot_decimals}"
+                if pair_decimals:
+                    tick_size = f"1e-{pair_decimals}"
+
+                min_qty = s.get("ordermin")
+                min_qty = str(Decimal(min_qty)) if min_qty else None
+
+                sym_row = dict(
                     exchange_id=exchange_id,
-                    symbol_id=key,                 # 👈 унікальний ключ Kraken
-                    symbol=s.get("wsname") or s.get("altname") or key,
+                    symbol_id=key,                                      # біржовий рядковий ID Kraken (e.g. "XXBTZUSD")
+                    symbol=s.get("wsname") or s.get("altname") or key,  # людиночитний
                     base_asset=s.get("base"),
                     quote_asset=s.get("quote"),
                     status="TRADING",
                     type="spot",
                     base_precision=s.get("pair_decimals"),
                     quote_precision=s.get("lot_decimals"),
-                    step_size=str(step_size) if step_size else None,
-                    tick_size=str(tick_size) if tick_size else None,
-                    min_qty=str(min_qty) if min_qty else None,
+                    step_size=step_size,
+                    tick_size=tick_size,
+                    min_qty=min_qty,
                     max_qty=None,
                     min_notional=None,
                     max_notional=None,
                     filters=s,
-                ))
+                )
+                symbols.append(sym_row)
 
         else:
             log.warning(f"❌ refresh_symbols не реалізовано для {client['exchange_code']}")
             return
 
+        # ---- Upsert into DB ----
         async with SessionLocal() as session:
             for sym in symbols:
-                stmt = insert(ExchangeSymbol).values(**sym).on_conflict_do_update(
-                    index_elements=["exchange_id", "symbol_id"],
-                    set_={**sym, "fetched_at": func.now()}
+                # не оновлюємо ключі у set_: exchange_id, symbol_id
+                set_fields = {k: v for k, v in sym.items() if k not in ("exchange_id", "symbol_id")}
+                set_fields["fetched_at"] = func.now()
+
+                stmt = (
+                    insert(ExchangeSymbol)
+                    .values(**sym)
+                    .on_conflict_do_update(
+                        index_elements=["exchange_id", "symbol_id"],
+                        set_=set_fields,
+                    )
                 )
                 await session.execute(stmt)
 
             await session.execute(
-                update(Exchange).where(Exchange.id == exchange_id).values(
+                update(Exchange)
+                .where(Exchange.id == exchange_id)
+                .values(
                     last_symbols_refresh_at=func.now(),
-                    last_filters_refresh_at=func.now()
+                    last_filters_refresh_at=func.now(),
                 )
             )
 
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="symbols_refresh",
-                status="ok",
-                message=f"{len(symbols)} symbols оновлено/додано"
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="symbols_refresh",
+                    status="ok",
+                    message=f"{len(symbols)} symbols оновлено/додано",
+                )
+            )
 
             await session.commit()
 
@@ -180,67 +242,95 @@ async def refresh_symbols(client, exchange_id):
     except Exception as e:
         log.exception(f"❌ refresh_symbols error: {e}")
         async with SessionLocal() as session:
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="symbols_refresh",
-                status="error",
-                message=str(e)
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="symbols_refresh",
+                    status="error",
+                    message=str(e),
+                )
+            )
             await session.commit()
-
-# ---------------------------
+# =========================
 # refresh_limits
-# ---------------------------
-async def refresh_limits(client, exchange_id):
+# =========================
+async def refresh_limits(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
+    """
+    Upsert exchange-wide rate limits into exchange_limits.
+    Uniqueness: (exchange_id, limit_type, interval_unit, interval_num).
+    """
     log.info(f"🔄 [START] refresh_limits for {client['exchange_code']}")
+    limits: List[Dict[str, Any]] = []
 
-    limits = []
     try:
-        if client["exchange_code"].upper() == "BINANCE":
+        ex_code = client["exchange_code"].upper()
+
+        if ex_code == "BINANCE":
             url = "/api/v3/exchangeInfo"
             resp = await client["http"].get(url)
             data = resp.json()
 
             for rl in data.get("rateLimits", []):
-                limits.append(dict(
-                    exchange_id=exchange_id,
-                    limit_type=rl["rateLimitType"],
-                    interval_unit=rl["interval"],
-                    interval_num=rl["intervalNum"],
-                    limit=rl["limit"],
-                    raw_json=rl,
-                ))
+                limits.append(
+                    dict(
+                        exchange_id=exchange_id,
+                        limit_type=rl["rateLimitType"],
+                        interval_unit=rl["interval"],
+                        interval_num=rl["intervalNum"],
+                        limit=rl["limit"],
+                        raw_json=rl,
+                    )
+                )
 
-        elif client["exchange_code"].upper() == "KRAKEN":
-            limits.append(dict(
-                exchange_id=exchange_id,
-                limit_type="REQUEST_WEIGHT",
-                interval_unit="SECOND",
-                interval_num=1,
-                limit=15,
-                raw_json={"docs": "https://support.kraken.com/..."}
-            ))
+        elif ex_code == "KRAKEN":
+            limits.append(
+                dict(
+                    exchange_id=exchange_id,
+                    limit_type="REQUEST_WEIGHT",
+                    interval_unit="SECOND",
+                    interval_num=1,
+                    limit=15,
+                    raw_json={"docs": "https://support.kraken.com/..."},
+                )
+            )
 
         async with SessionLocal() as session:
             for lim in limits:
-                stmt = insert(ExchangeLimit).values(**lim).on_conflict_do_update(
-                    index_elements=["exchange_id", "limit_type", "interval_unit", "interval_num"],
-                    set_={**lim, "fetched_at": func.now()}
+                # не оновлюємо ключі у set_
+                set_fields = {
+                    "limit": lim["limit"],
+                    "raw_json": lim["raw_json"],
+                    "fetched_at": func.now(),
+                }
+                stmt = (
+                    insert(ExchangeLimit)
+                    .values(**lim)
+                    .on_conflict_do_update(
+                        index_elements=[
+                            "exchange_id",
+                            "limit_type",
+                            "interval_unit",
+                            "interval_num",
+                        ],
+                        set_=set_fields,
+                    )
                 )
                 await session.execute(stmt)
 
             await session.execute(
-                update(Exchange).where(Exchange.id == exchange_id).values(
-                    last_limits_refresh_at=func.now()
-                )
+                update(Exchange)
+                .where(Exchange.id == exchange_id)
+                .values(last_limits_refresh_at=func.now())
             )
 
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="limits_refresh",
-                status="ok",
-                message=f"{len(limits)} limits оновлено/додано"
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="limits_refresh",
+                    status="ok",
+                    message=f"{len(limits)} limits оновлено/додано",
+                )
+            )
 
             await session.commit()
 
@@ -249,59 +339,78 @@ async def refresh_limits(client, exchange_id):
     except Exception as e:
         log.exception(f"❌ refresh_limits error: {e}")
         async with SessionLocal() as session:
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="limits_refresh",
-                status="error",
-                message=str(e)
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="limits_refresh",
+                    status="error",
+                    message=str(e),
+                )
+            )
             await session.commit()
-
-async def refresh_fees(client, exchange_id):
+# =========================
+# refresh_fees
+# =========================
+async def refresh_fees(client: Dict[str, Any], exchange_id: uuid.UUID) -> None:
+    """
+    Upsert fees into exchange_fees.
+    For Binance: single row without symbol_id (None).
+    For Kraken: per-symbol fee ladder; symbol_id is UUID FK -> exchange_symbols.id.
+    Uniqueness: (exchange_id, symbol_id, volume_threshold).
+    """
     log.info(f"🔄 [START] refresh_fees for {client['exchange_code']}")
-    fees_to_insert = []
+    fees_to_insert: List[Dict[str, Any]] = []
 
     try:
-        if client["exchange_code"].upper() == "BINANCE":
+        ex_code = client["exchange_code"].upper()
+
+        if ex_code == "BINANCE":
             url = "/api/v3/account"
             resp = await client["http"].get(url)
             data = resp.json()
             maker = float(data.get("makerCommission", 10)) / 10000
             taker = float(data.get("takerCommission", 10)) / 10000
 
-            fees_to_insert.append(dict(
-                exchange_id=exchange_id,
-                symbol_id=None,
-                volume_threshold=0,
-                maker_fee=maker,
-                taker_fee=taker,
-            ))
+            fees_to_insert.append(
+                dict(
+                    exchange_id=exchange_id,
+                    symbol_id=None,                # біржа-рівневі комісії
+                    volume_threshold=Decimal(0),
+                    maker_fee=Decimal(maker),
+                    taker_fee=Decimal(taker),
+                )
+            )
 
-        elif client["exchange_code"].upper() == "KRAKEN":
+        elif ex_code == "KRAKEN":
             url = "/0/public/AssetPairs"
             resp = await client["http"].get(url)
             data = resp.json()
 
             async with SessionLocal() as session:
                 for key, s in data.get("result", {}).items():
-                    # -------------------
-                    # 🔎 Lookup символу
-                    # -------------------
+                    # 1) ensure / lookup symbol UUID
                     symbol_obj = await session.execute(
                         select(ExchangeSymbol.id).where(
                             ExchangeSymbol.exchange_id == exchange_id,
-                            ExchangeSymbol.symbol_id == key
+                            ExchangeSymbol.symbol_id == key,
                         )
                     )
-                    symbol_id_db = symbol_obj.scalar_one_or_none()
+                    symbol_uuid = symbol_obj.scalar_one_or_none()
 
-                    if not symbol_id_db:
-                        # Якщо символу немає → створюємо його одразу
+                    if not symbol_uuid:
+                        # якщо немає символу — створюємо
                         lot_decimals = int(s.get("lot_decimals", 0))
-                        step_size = Decimal(f"1e-{lot_decimals}") if lot_decimals else None
-                        min_qty = Decimal(s.get("ordermin")) if s.get("ordermin") else None
                         pair_decimals = int(s.get("pair_decimals", lot_decimals))
-                        tick_size = Decimal(f"1e-{pair_decimals}") if pair_decimals else None
+
+                        step_size: Optional[str] = None
+                        tick_size: Optional[str] = None
+                        if lot_decimals:
+                            step_size = f"1e-{lot_decimals}"
+                        if pair_decimals:
+                            tick_size = f"1e-{pair_decimals}"
+
+                        min_qty = s.get("ordermin")
+                        min_qty = str(Decimal(min_qty)) if min_qty else None
 
                         new_symbol = dict(
                             exchange_id=exchange_id,
@@ -313,26 +422,30 @@ async def refresh_fees(client, exchange_id):
                             type="spot",
                             base_precision=s.get("pair_decimals"),
                             quote_precision=s.get("lot_decimals"),
-                            step_size=str(step_size) if step_size else None,
-                            tick_size=str(tick_size) if tick_size else None,
-                            min_qty=str(min_qty) if min_qty else None,
+                            step_size=step_size,
+                            tick_size=tick_size,
+                            min_qty=min_qty,
                             max_qty=None,
                             min_notional=None,
                             max_notional=None,
                             filters=s,
                         )
 
-                        stmt = insert(ExchangeSymbol).values(**new_symbol).on_conflict_do_update(
-                            index_elements=["exchange_id", "symbol_id"],
-                            set_={**new_symbol, "fetched_at": func.now()}
-                        ).returning(ExchangeSymbol.id)
+                        # upsert symbol, then RETURNING id
+                        stmt = (
+                            insert(ExchangeSymbol)
+                            .values(**new_symbol)
+                            .on_conflict_do_update(
+                                index_elements=["exchange_id", "symbol_id"],
+                                set_={**{k: v for k, v in new_symbol.items() if k not in ("exchange_id", "symbol_id")},
+                                      "fetched_at": func.now()}
+                            )
+                            .returning(ExchangeSymbol.id)
+                        )
+                        res = await session.execute(stmt)
+                        symbol_uuid = res.scalar_one()
 
-                        result = await session.execute(stmt)
-                        symbol_id_db = result.scalar_one()
-
-                    # -------------------
-                    # Fees
-                    # -------------------
+                    # 2) fee ladder
                     fees = s.get("fees", [])
                     fees_maker = s.get("fees_maker", [])
 
@@ -340,42 +453,49 @@ async def refresh_fees(client, exchange_id):
                         volume, taker = level
                         maker = fees_maker[idx][1] if idx < len(fees_maker) else None
 
-                        fees_to_insert.append(dict(
-                            exchange_id=exchange_id,
-                            symbol_id=symbol_id_db,
-                            volume_threshold=Decimal(volume),
-                            maker_fee=Decimal(maker) if maker is not None else None,
-                            taker_fee=Decimal(taker),
-                        ))
+                        fees_to_insert.append(
+                            dict(
+                                exchange_id=exchange_id,
+                                symbol_id=symbol_uuid,                        # UUID FK
+                                volume_threshold=Decimal(volume),
+                                maker_fee=Decimal(maker) if maker is not None else None,
+                                taker_fee=Decimal(taker),
+                            )
+                        )
 
-        # -------------------
-        # Запис у базу
-        # -------------------
+        # ---- Write to DB ----
         async with SessionLocal() as session:
             for fee in fees_to_insert:
-                stmt = insert(ExchangeFee).values(**fee).on_conflict_do_update(
-                    index_elements=["exchange_id", "symbol_id", "volume_threshold"],
-                    set_={
-                        "volume_threshold": fee["volume_threshold"],
-                        "maker_fee": fee["maker_fee"],
-                        "taker_fee": fee["taker_fee"],
-                        "fetched_at": func.now()
-                    }
+                # не оновлюємо ключові поля в set_
+                stmt = (
+                    insert(ExchangeFee)
+                    .values(**fee)
+                    .on_conflict_do_update(
+                        index_elements=["exchange_id", "symbol_id", "volume_threshold"],
+                        set_={
+                            "volume_threshold": fee["volume_threshold"],
+                            "maker_fee": fee["maker_fee"],
+                            "taker_fee": fee["taker_fee"],
+                            "fetched_at": func.now(),
+                        },
+                    )
                 )
                 await session.execute(stmt)
 
             await session.execute(
-                update(Exchange).where(Exchange.id == exchange_id).values(
-                    last_fees_refresh_at=func.now()
-                )
+                update(Exchange)
+                .where(Exchange.id == exchange_id)
+                .values(last_fees_refresh_at=func.now())
             )
 
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="fees_refresh",
-                status="ok",
-                message=f"{len(fees_to_insert)} fees оновлено/додано"
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="fees_refresh",
+                    status="ok",
+                    message=f"{len(fees_to_insert)} fees оновлено/додано",
+                )
+            )
 
             await session.commit()
 
@@ -384,10 +504,12 @@ async def refresh_fees(client, exchange_id):
     except Exception as e:
         log.exception(f"❌ refresh_fees error: {e}")
         async with SessionLocal() as session:
-            session.add(ExchangeStatusHistory(
-                exchange_id=exchange_id,
-                event="fees_refresh",
-                status="error",
-                message=str(e)
-            ))
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="fees_refresh",
+                    status="error",
+                    message=str(e),
+                )
+            )
             await session.commit()
