@@ -1,34 +1,40 @@
+import sys
+import os
 from logging.config import fileConfig
+
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# --- Import global Base ---
-from services.core_admin.app.models.base import Base
+# --- додано 👇 ---
+# Шлях до кореня проєкту (де лежить services/)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+# -----------------
 
-# --- Import all models to register them in Base.metadata ---
-from services.core_admin.app import models as admin_models
-from services.core_fetch.app import models as fetch_models
-from services.core_news.app import models as news_models
+from services.common.models.base import Base
 
-# Alembic Config object
+# Alembic Config object, доступний у цьому файлі
 config = context.config
 
-# Interpret the config file for Python logging.
+# Setup logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set target_metadata for autogenerate
+# Метадані для автогенерації
 target_metadata = Base.metadata
 
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode (no DB connection)."""
+    """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -36,7 +42,7 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
-    """Run migrations in 'online' mode (with DB connection)."""
+    """Run migrations in 'online' mode."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
@@ -44,7 +50,12 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

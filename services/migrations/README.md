@@ -18,3 +18,8 @@ alembic upgrade head
 
 alembic revision -m "add unique constraints for exchange_limits and exchange_fees"
 alembic upgrade head
+
+
+cd ~/PycharmProjects/kube_trade_service
+alembic revision --autogenerate -m "init full schema"
+alembic upgrade head
