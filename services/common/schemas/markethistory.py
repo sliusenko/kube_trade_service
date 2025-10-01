@@ -38,4 +38,11 @@ class NewsSentimentUpdate(BaseModel):
 class NewsSentimentOut(NewsSentimentBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
+    price_before: Optional[Decimal] = None
+    price_after_1h: Optional[Decimal] = None
+    price_after_6h: Optional[Decimal] = None
+    price_after_24h: Optional[Decimal] = None
+    price_change_1h: Optional[float] = None
+    price_change_6h: Optional[float] = None
+    price_change_24h: Optional[float] = None
