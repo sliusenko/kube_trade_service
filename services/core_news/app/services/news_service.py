@@ -62,14 +62,35 @@ async def fetch_latest_news() -> list[dict]:
     return []
 
 
-async def get_symbol_id(session: AsyncSession, text: str) -> Optional[uuid.UUID]:
-    """Шукає symbol.id у назві новини"""
-    result = await session.execute(sa.select(ExchangeSymbols.id, ExchangeSymbols.symbol))
-    for sid, sym in result.all():
-        if re.search(rf"\b{sym}\b", text):  # більш точний пошук
-            return sid
-    return None
+# 🔑 Мапа ключових слів → торгові символи
+KEYWORD_TO_SYMBOL = {
+    "bitcoin": "BTCUSDT",
+    "btc": "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "eth": "ETHUSDT",
+    "binance": "BNBUSDT",
+    "bnb": "BNBUSDT",
+    "sec": "BTCUSDT",     # умовно тягнемо до BTC
+    "hack": None,         # загальні новини про хак не мапимо на конкретний символ
+}
 
+
+async def get_symbol_id(session: AsyncSession, text: str) -> Optional[uuid.UUID]:
+    """Шукає відповідний symbol_id по ключовим словам у тексті новини"""
+    if not text:
+        return None
+
+    text_lower = text.lower()
+
+    for keyword, mapped_symbol in KEYWORD_TO_SYMBOL.items():
+        if keyword in text_lower and mapped_symbol:
+            q = sa.select(ExchangeSymbols.id).where(ExchangeSymbols.symbol == mapped_symbol)
+            res = await session.execute(q)
+            symbol_id = res.scalar_one_or_none()
+            if symbol_id:
+                return symbol_id
+
+    return None
 
 async def save_news_to_db(news_items: list[dict], session: AsyncSession):
     inserted_count = 0
@@ -96,7 +117,7 @@ async def save_news_to_db(news_items: list[dict], session: AsyncSession):
             summary=news.get("summary", "")[:1000],
             sentiment=score["compound"],
             source=news.get("source", "newsapi"),
-            symbol=symbol_id,
+            symbol_id=symbol_id,
             url=news.get("url", ""),
         )
         session.add(db_news)
