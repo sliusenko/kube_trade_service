@@ -13,8 +13,12 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const data = await getDashboardStats(); // 🔹 mock дані
-      setStats(data);
+      try {
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (err) {
+        console.error("❌ Failed to fetch dashboard stats:", err);
+      }
     };
     fetchStats();
   }, []);
