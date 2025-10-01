@@ -80,7 +80,7 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
             sym = await session.execute(
                 select(ExchangeSymbol.id).where(
                     ExchangeSymbol.exchange_id == exchange_id,
-                    (ExchangeSymbol.symbol_id == symbol) | (ExchangeSymbol.symbol == symbol),
+                    (ExchangeSymbol.symbol_id == symbol),
                 )
             )
             symbol_uuid = sym.scalar_one_or_none()
@@ -92,7 +92,7 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
                 PriceHistory(
                     timestamp=datetime.now(timezone.utc),
                     exchange_id=exchange_id,
-                    symbol=symbol_uuid,
+                    symbol_id=symbol_uuid,
                     price=price,
                 )
             )
