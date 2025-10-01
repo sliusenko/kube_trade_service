@@ -30,107 +30,69 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
     Fetch latest price for a given symbol from an exchange and store in DB.
     Expects `symbol` as the exchange's symbol code (e.g. "BTCUSDT" for Binance or "XXBTZUSD" for Kraken).
     Saves PriceHistory.symbol as UUID (FK -> exchange_symbols.id).
-    Also logs event into ExchangeStatusHistory.
     """
     ex_code = exchange.upper()
 
-    try:
-        price: Optional[float] = None
+    # 1) отримуємо ціну
+    price: Optional[float] = None
+    if ex_code == "BINANCE":
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            price = float(data["price"])
 
-        # ---- Binance ----
-        if ex_code == "BINANCE":
-            url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                data = resp.json()
-                price = float(data["price"])
+    elif ex_code == "KRAKEN":
+        url = f"https://api.kraken.com/0/public/Ticker?pair={symbol}"
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            result = data.get("result", {})
+            if not result:
+                raise ValueError(f"No ticker data for {symbol} from Kraken")
+            ticker = list(result.values())[0]
+            price = float(ticker["c"][0])  # last trade price
 
-        # ---- Kraken ----
-        elif ex_code == "KRAKEN":
-            url = f"https://api.kraken.com/0/public/Ticker?pair={symbol}"
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                data = resp.json()
-                result = data.get("result", {})
-                if not result:
-                    raise ValueError(f"No ticker data for {symbol} from Kraken")
-                ticker = list(result.values())[0]
-                price = float(ticker["c"][0])  # last trade price
+    else:
+        raise ValueError(f"fetch_and_store_price not implemented for {exchange}")
 
-        else:
-            log.warning(f"❌ fetch_and_store_price not implemented for {exchange}")
-            return
+    if price is None:
+        raise ValueError(f"No price received for {exchange}:{symbol}")
 
-        if price is None:
-            raise ValueError(f"No price received for {exchange}:{symbol}")
+    # 2) пишемо у PriceHistory
+    async with SessionLocal() as session:
+        # lookup exchange_id
+        exch = await session.execute(
+            select(Exchange.id).where(Exchange.code == ex_code)
+        )
+        exchange_id = exch.scalar_one_or_none()
+        if not exchange_id:
+            raise ValueError(f"Exchange {exchange} not found in DB")
 
-        # ---- Save to DB ----
-        async with SessionLocal() as session:
-            # 1) lookup exchange_id
-            exch = await session.execute(
-                select(Exchange.id).where(Exchange.code == ex_code)
+        # lookup symbol UUID
+        sym = await session.execute(
+            select(ExchangeSymbol.id).where(
+                ExchangeSymbol.exchange_id == exchange_id,
+                ExchangeSymbol.symbol_id == symbol,
             )
-            exchange_id = exch.scalar_one_or_none()
-            if not exchange_id:
-                raise ValueError(f"Exchange {exchange} not found in DB")
+        )
+        symbol_uuid = sym.scalar_one_or_none()
+        if not symbol_uuid:
+            raise ValueError(f"Symbol {symbol} not found in DB for {exchange}")
 
-            # 2) lookup symbol UUID
-            sym = await session.execute(
-                select(ExchangeSymbol.id).where(
-                    ExchangeSymbol.exchange_id == exchange_id,
-                    (ExchangeSymbol.symbol_id == symbol),
-                )
+        session.add(
+            PriceHistory(
+                timestamp=datetime.now(timezone.utc),
+                exchange_id=exchange_id,
+                symbol_id=symbol_uuid,
+                price=price,
             )
-            symbol_uuid = sym.scalar_one_or_none()
-            if not symbol_uuid:
-                raise ValueError(f"Symbol {symbol} not found in DB for {exchange}")
+        )
+        await session.commit()
 
-            # 3) write price history
-            session.add(
-                PriceHistory(
-                    timestamp=datetime.now(timezone.utc),
-                    exchange_id=exchange_id,
-                    symbol_id=symbol_uuid,
-                    price=price,
-                )
-            )
-
-            # 4) log ok event
-            session.add(
-                ExchangeStatusHistory(
-                    exchange_id=exchange_id,
-                    event="price_fetch",
-                    status="ok",
-                    message=f"Fetched {symbol}={price}",
-                )
-            )
-
-            await session.commit()
-
-        log.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
-
-    except Exception as e:
-        log.exception(f"❌ Error fetching price for {exchange}:{symbol}: {e}")
-
-        # ❌ log error into ExchangeStatusHistory
-        async with SessionLocal() as session:
-            exch = await session.execute(
-                select(Exchange.id).where(Exchange.code == ex_code)
-            )
-            exchange_id = exch.scalar_one_or_none()
-
-            if exchange_id:
-                session.add(
-                    ExchangeStatusHistory(
-                        exchange_id=exchange_id,
-                        event="price_fetch",
-                        status="error",
-                        message=str(e),
-                    )
-                )
-                await session.commit()
+    log.debug(f"💾 Stored price {symbol}={price} ({exchange})")
 # =========================
 # refresh_symbols
 # =========================

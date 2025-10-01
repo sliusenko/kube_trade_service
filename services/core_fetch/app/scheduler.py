@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from core_fetch.app.services.universal_fetcher import (
@@ -8,6 +9,7 @@ from core_fetch.app.services.universal_fetcher import (
 )
 from common.deps.session import SessionLocal
 from common.models.exchanges import Exchange, ExchangeSymbol
+from common.models import ExchangeStatusHistory
 from common.deps.clients import get_exchange_client
 from common.deps.config import settings
 
@@ -15,6 +17,59 @@ log = logging.getLogger(__name__)
 
 # Make scheduler global
 scheduler = AsyncIOScheduler()
+
+async def fetch_and_store_exchange_prices(exchange_code: str, exchange_id: uuid.UUID) -> None:
+    """Fetch latest prices for all active symbols of a given exchange."""
+    try:
+        async with SessionLocal() as session:
+            res = await session.execute(
+                select(ExchangeSymbol.symbol_id)
+                .where(
+                    ExchangeSymbol.exchange_id == exchange_id,
+                    ExchangeSymbol.status == "TRADING"
+                )
+            )
+            symbols = [row[0] for row in res.all()]
+
+        log.info(f"💰 Fetching prices for {exchange_code}: {len(symbols)} pairs")
+
+        ok_count = 0
+        fail_count = 0
+
+        for symbol_id in symbols:
+            try:
+                await fetch_and_store_price(exchange_code, symbol_id)
+                ok_count += 1
+            except Exception as e:
+                fail_count += 1
+                log.error(f"❌ {exchange_code}:{symbol_id} failed: {e}")
+
+        # aggregated log
+        async with SessionLocal() as session:
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="price_fetch",
+                    status="ok" if fail_count == 0 else "partial",
+                    message=f"Fetched prices for {exchange_code}: {ok_count} ok, {fail_count} failed",
+                )
+            )
+            await session.commit()
+
+        log.info(f"✅ {exchange_code} prices done: {ok_count} ok, {fail_count} failed")
+
+    except Exception as e:
+        log.exception(f"❌ fetch_and_store_exchange_prices error for {exchange_code}: {e}")
+        async with SessionLocal() as session:
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="price_fetch",
+                    status="error",
+                    message=str(e),
+                )
+            )
+            await session.commit()
 
 async def load_jobs(scheduler: AsyncIOScheduler):
     async with SessionLocal() as session:
@@ -29,7 +84,6 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 log.warning(f"⚠️ Skipping {ex.code}, no client")
                 continue
 
-            # ---- symbols ----
             scheduler.add_job(
                 refresh_symbols,
                 "interval",
@@ -38,8 +92,6 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 id=f"symbols_{ex.code}_{ex.id}",
                 replace_existing=True,
             )
-
-            # ---- limits ----
             scheduler.add_job(
                 refresh_limits,
                 "interval",
@@ -48,8 +100,6 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 id=f"limits_{ex.code}_{ex.id}",
                 replace_existing=True,
             )
-
-            # ---- fees ----
             scheduler.add_job(
                 refresh_fees,
                 "interval",
@@ -58,27 +108,19 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 id=f"fees_{ex.code}_{ex.id}",
                 replace_existing=True,
             )
-
-        # ---- prices (global) ----
-        res = await session.execute(
-            select(Exchange.code, ExchangeSymbol.symbol_id)
-            .join(Exchange, Exchange.id == ExchangeSymbol.exchange_id)
-            .where(ExchangeSymbol.status == "TRADING")
-        )
-        symbols = res.all()
-
-        for exchange_code, symbol_id in symbols:
             scheduler.add_job(
-                fetch_and_store_price,
+                fetch_and_store_exchange_prices,
                 "interval",
                 minutes=int(settings.FETCH_PRICE_INTERVAL_MIN),
-                args=[exchange_code, symbol_id],
-                id=f"price_{exchange_code.lower()}_{symbol_id.lower()}",
+                args=[ex.code, ex.id],
+                id=f"prices_{ex.code}_{ex.id}",
                 replace_existing=True,
+                max_instances=1,
+                misfire_grace_time=30,
             )
 
         log.info(
-            f"🕑 Added {len(symbols)} price jobs "
+            f"🕑 Added {len(exchanges)} grouped price jobs "
             f"(every {settings.FETCH_PRICE_INTERVAL_MIN}m)"
         )
 
