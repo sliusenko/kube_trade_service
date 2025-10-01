@@ -1,20 +1,23 @@
 import logging
 import httpx
 import uuid
-import re
+import os
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 import sqlalchemy as sa
 import datetime as dt
+
 from common.models.markethistory import NewsSentiment, PriceHistory
 from common.models.exchanges import ExchangeSymbol
 from common.deps.config import settings
 
 log = logging.getLogger(__name__)
 
+# === NewsAPI config ===
 NEWS_ENDPOINT = "https://newsapi.org/v2/everything"
 NEWS_PARAMS = {
     "q": "bitcoin OR ethereum OR binance OR sec OR hack",
@@ -26,14 +29,29 @@ NEWS_PARAMS = {
 analyzer = SentimentIntensityAnalyzer()
 BLACKLIST_SOURCES = {"reddit.com"}
 
+# 🔑 Ключове слово → торговий символ (для прив’язки новини до symbol_id)
+KEYWORD_TO_SYMBOL = {
+    "bitcoin": "BTCUSDT",
+    "btc": "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "eth": "ETHUSDT",
+    "binance": "BNBUSDT",
+    "bnb": "BNBUSDT",
+    "sec": "BTCUSDT",  # умовно тягнемо до BTC
+    "hack": None,      # загальні новини про хак не мапимо на конкретний символ
+}
 
-def _parse_ts(ts_str: str):
+# Параметри оркестрації
+DEFAULT_HALT_THRESHOLD = -0.80   # якщо не задано у settings/env
+DEFAULT_LOOKBACK_HOURS = 6       # вікно для агрегату з БД
+
+def _parse_ts(ts_str: str) -> Optional[datetime]:
     if not ts_str:
         return None
     return datetime.fromisoformat(ts_str.replace("Z", "+00:00")).astimezone(timezone.utc)
 
-
-async def fetch_latest_news() -> list[dict]:
+async def fetch_latest_news() -> List[dict]:
+    """Тягне батч свіжих новин із NewsAPI та нормалізує поля."""
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(
@@ -62,27 +80,12 @@ async def fetch_latest_news() -> list[dict]:
         log.exception("❌ Error fetching news")
     return []
 
-
-# 🔑 Мапа ключових слів → торгові символи
-KEYWORD_TO_SYMBOL = {
-    "bitcoin": "BTCUSDT",
-    "btc": "BTCUSDT",
-    "ethereum": "ETHUSDT",
-    "eth": "ETHUSDT",
-    "binance": "BNBUSDT",
-    "bnb": "BNBUSDT",
-    "sec": "BTCUSDT",     # умовно тягнемо до BTC
-    "hack": None,         # загальні новини про хак не мапимо на конкретний символ
-}
-
-
 async def get_symbol_id(session: AsyncSession, text: str) -> Optional[uuid.UUID]:
-    """Шукає відповідний symbol_id по ключовим словам у тексті новини"""
+    """Шукає відповідний exchange_symbols.id за ключовими словами у тексті новини."""
     if not text:
         return None
 
     text_lower = text.lower()
-
     for keyword, mapped_symbol in KEYWORD_TO_SYMBOL.items():
         if keyword in text_lower and mapped_symbol:
             q = sa.select(ExchangeSymbol.id).where(ExchangeSymbol.symbol == mapped_symbol)
@@ -90,10 +93,10 @@ async def get_symbol_id(session: AsyncSession, text: str) -> Optional[uuid.UUID]
             symbol_id = res.scalar_one_or_none()
             if symbol_id:
                 return symbol_id
-
     return None
 
-async def save_news_to_db(news_items: list[dict], session: AsyncSession):
+async def save_news_to_db(news_items: List[dict], session: AsyncSession) -> None:
+    """Зберігає новини у NewsSentiment (idempotent по published_at + title)."""
     inserted_count = 0
     for news in news_items:
         if not news.get("published_at") or not news.get("title"):
@@ -125,15 +128,34 @@ async def save_news_to_db(news_items: list[dict], session: AsyncSession):
         inserted_count += 1
 
     await session.commit()
-    log.info(f"✅ Inserted {inserted_count} news into DB")
+    log.info("✅ Inserted %s news into DB", inserted_count)
 
-async def update_news_prices(session):
+async def _get_price_at(session: AsyncSession, symbol_id: uuid.UUID, target_ts: datetime, before: bool = False) -> Optional[float]:
+    """Отримати найближчу ціну до часу target_ts."""
+    if before:
+        # ціна ≤ published_at (останній запис перед новиною)
+        q = (
+            select(PriceHistory.price)
+            .where(PriceHistory.symbol_id == symbol_id, PriceHistory.timestamp <= target_ts)
+            .order_by(PriceHistory.timestamp.desc())
+            .limit(1)
+        )
+    else:
+        # ціна найближча після target_ts
+        q = (
+            select(PriceHistory.price)
+            .where(PriceHistory.symbol_id == symbol_id, PriceHistory.timestamp >= target_ts)
+            .order_by(PriceHistory.timestamp.asc())
+            .limit(1)
+        )
+    res = await session.execute(q)
+    return res.scalar_one_or_none()
+
+async def update_news_prices(session: AsyncSession) -> None:
+    """Проставляє ціни до/після для новин останніх 2 днів і прораховує % зміни."""
     now = dt.datetime.utcnow()
 
-    # Вибрати всі новини без цін або нові (наприклад за 2 дні)
-    q = select(NewsSentiment).where(
-        NewsSentiment.published_at >= now - dt.timedelta(days=2)
-    )
+    q = select(NewsSentiment).where(NewsSentiment.published_at >= now - dt.timedelta(days=2))
     results = (await session.execute(q)).scalars().all()
 
     for news in results:
@@ -164,25 +186,62 @@ async def update_news_prices(session):
             news.price_change_24h = float((price_after_24h - price_before) / price_before * 100)
 
     await session.commit()
-    log.info(f"✅ Updated prices for {len(results)} news items")
+    log.info("✅ Updated prices for %s news items", len(results))
 
-async def _get_price_at(session, symbol_id, target_ts, before=False):
-    """Отримати найближчу ціну до часу target_ts"""
-    if before:
-        # ціна ≤ published_at (останній запис перед новиною)
-        q = (
-            select(PriceHistory.price)
-            .where(PriceHistory.symbol_id == symbol_id, PriceHistory.timestamp <= target_ts)
-            .order_by(PriceHistory.timestamp.desc())
-            .limit(1)
-        )
-    else:
-        # ціна найближча після target_ts
-        q = (
-            select(PriceHistory.price)
-            .where(PriceHistory.symbol_id == symbol_id, PriceHistory.timestamp >= target_ts)
-            .order_by(PriceHistory.timestamp.asc())
-            .limit(1)
-        )
+# === Агрегація сентименту та HALT-логіка ===
+async def _avg_recent_sentiment(session: AsyncSession, hours: int = DEFAULT_LOOKBACK_HOURS) -> Optional[float]:
+    """Середній compound-сентимент новин за останні N годин з NewsSentiment."""
+    cutoff = datetime.utcnow() - timedelta(hours=hours)
+    q = select(func.avg(NewsSentiment.sentiment)).where(NewsSentiment.published_at >= cutoff)
     res = await session.execute(q)
     return res.scalar_one_or_none()
+
+async def check_news_and_halt_trading(session: AsyncSession) -> None:
+    """
+    Оркестрація:
+      1) fetch свіжих новин
+      2) save у БД із compound-сентиментом
+      3) update цін до/після
+      4) aggregate sentiment (за вікно lookback) та, якщо нижче порога — HALT (поки лог/TODO)
+    """
+    # 1) fetch
+    items = await fetch_latest_news()
+    if not items:
+        log.info("ℹ️ No fresh news fetched from NewsAPI")
+    else:
+        # 2) save
+        await save_news_to_db(items, session)
+
+    # 3) update prices (опційно; не блокуємо цикл у випадку помилки)
+    try:
+        await update_news_prices(session)
+    except Exception as e:
+        log.warning("⚠️ update_news_prices failed: %s", e)
+
+    # 4) aggregate & decision
+    lookback_h = getattr(settings, "NEWS_LOOKBACK_HOURS", None) or int(os.getenv("NEWS_LOOKBACK_HOURS", DEFAULT_LOOKBACK_HOURS))
+    avg_sent = await _avg_recent_sentiment(session, hours=lookback_h)
+    if avg_sent is None:
+        log.info("ℹ️ No news in the last %s hours to aggregate sentiment", lookback_h)
+        return
+
+    threshold_cfg = getattr(settings, "HALT_TRADE_NEG_SENTIMENT", None)
+    threshold = float(threshold_cfg) if threshold_cfg is not None else float(os.getenv("HALT_TRADE_NEG_SENTIMENT", DEFAULT_HALT_THRESHOLD))
+
+    log.info("📰 Avg news sentiment (last %sh): %.3f; threshold: %.2f", lookback_h, avg_sent, threshold)
+
+    if avg_sent <= threshold:
+        # TODO: Реальна імплементація зупинки торгівлі:
+        # await set_global_trading_halt(session, reason="news_negative",
+        #                               until=datetime.utcnow() + timedelta(hours=1))
+        log.warning("🚨 Negative average sentiment (%.3f <= %.2f) → HALT trading (TODO: persist/notify)", avg_sent, threshold)
+    else:
+        log.info("✅ Sentiment above threshold, trading stays enabled")
+
+
+# Приклад заглушки для майбутнього:
+# async def set_global_trading_halt(session: AsyncSession, reason: str, until: datetime) -> None:
+#     """
+#     Встановити прапор HALT у вашій таблиці конфігів/фіч-флагів або надіслати подію в інший сервіс.
+#     """
+#     ...

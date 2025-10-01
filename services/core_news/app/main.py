@@ -1,52 +1,36 @@
-import os
 import logging
+import asyncio
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from core_news.app.routers import news
-from core_news.app.services import news_service
-from common.deps.db import AsyncSessionLocal 
+# ⚠️ Підстав свій фабричний метод створення сесії:
+# Якщо у тебе async_session() — заміни на нього.
+from common.deps.db import AsyncSessionLocal
+
+from core_news.app.services.news_service import check_news_and_halt_trading
 
 log = logging.getLogger(__name__)
+app = FastAPI(title="core-news")
+scheduler = AsyncIOScheduler()
 
-# Global settings from env (Helm values)
-FETCH_NEWS_INTERVAL_MIN = int(os.getenv("FETCH_NEWS_INTERVAL_MIN", "10"))
-UPDATE_NEWS_PRICES_INTERVAL_HOURS = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "1"))
+# ——— Health ———
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
 
-app = FastAPI(title="core_news")
-
-# Register routers
-app.include_router(news.router)
-
+# ——— APScheduler jobs ———
+async def job_check_news():
+    async with AsyncSessionLocal() as session:
+        await check_news_and_halt_trading(session)
 
 @app.on_event("startup")
 async def startup_event():
-    log.info("🚀 Starting core_news service")
-
-    scheduler = AsyncIOScheduler()
-
-    # Job: fetch and store latest news
-    async def job_check_news():
-        async with AsyncSessionLocal() as session:
-            await news_service.check_news_and_halt_trading(session)
-
-    # Job: update price_before/after for saved news
-    async def job_update_prices():
-        async with AsyncSessionLocal() as session:
-            await news_service.update_news_prices(session)
-
-    # Add jobs to scheduler
-    scheduler.add_job(job_check_news, "interval", minutes=FETCH_NEWS_INTERVAL_MIN)
-    scheduler.add_job(job_update_prices, "interval", hours=UPDATE_NEWS_PRICES_INTERVAL_HOURS)
-
+    # інтервал можна конфігурити через env/values, тут 10 хв як у тебе в логах
+    scheduler.add_job(job_check_news, "interval", minutes=10, id="check_news_interval")
     scheduler.start()
-    log.info(
-        f"✅ Scheduler started with jobs: "
-        f"news interval={FETCH_NEWS_INTERVAL_MIN}m, "
-        f"update_prices interval={UPDATE_NEWS_PRICES_INTERVAL_HOURS}h"
-    )
+    log.info("🗓️ APScheduler started (check_news every 10 minutes)")
 
-
-@app.get("/health", tags=["system"])
-async def health():
-    return {"status": "ok"}
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.shutdown(wait=False)
+    log.info("🛑 APScheduler stopped")
