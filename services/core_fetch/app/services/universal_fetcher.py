@@ -7,6 +7,7 @@ from typing import Optional, List, Dict, Any
 import httpx
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from common.deps.session import SessionLocal
@@ -90,8 +91,8 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
             # 3) write price history (PriceHistory.symbol expects UUID FK)
             record = PriceHistory(
                 timestamp=datetime.now(timezone.utc),
-                exchange=ex_code,         # текстовий код біржі
-                symbol=symbol_uuid,       # UUID -> FK
+                exchange_id=exchange_id,
+                symbol=symbol_uuid,
                 price=price,
             )
             session.add(record)

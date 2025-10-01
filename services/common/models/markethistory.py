@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column, String, DateTime, Float, UniqueConstraint
 )
 import sqlalchemy as sa
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
@@ -14,20 +15,37 @@ from .base import Base
 class PriceHistory(Base):
     __tablename__ = "price_history"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    exchange: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, autoincrement=True
+    )
 
+    # ✅ Тепер зберігаємо UUID біржі
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # ✅ символ лишається UUID (як і було)
     symbol: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True), sa.ForeignKey("exchange_symbols.id"), nullable=False, index=True
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchange_symbols.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
     )
 
     price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+
     timestamp: Mapped[dt.datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), index=True
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        index=True
     )
 
     def __repr__(self) -> str:
-        return f"<PriceHistory {self.exchange}:{self.symbol} {self.price} @ {self.timestamp}>"
+        return f"<PriceHistory {self.exchange_id}:{self.symbol} {self.price} @ {self.timestamp}>"
 
 class NewsSentiment(Base):
     __tablename__ = "news_sentiments"

@@ -40,5 +40,6 @@
 [//]: # (alembic revision --autogenerate -m "init full schema")
 
 [//]: # (alembic upgrade head)
+ source .venv/bin/activate
 alembic revision --autogenerate -m "fix unique constraint on exchange_symbols"
 alembic upgrade head
