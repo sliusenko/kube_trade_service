@@ -58,8 +58,12 @@ class NewsSentiment(Base):
     source: Mapped[str] = mapped_column(sa.String, nullable=False)
     url: Mapped[str] = mapped_column(sa.Text, nullable=False)
 
-    symbol: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True), sa.ForeignKey("exchange_symbols.id"), nullable=True, index=True
+    # 🔄 symbol → symbol_id
+    symbol_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        sa.ForeignKey("exchange_symbols.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
     )
 
     published_at = Column(DateTime(timezone=True), nullable=False, index=True)

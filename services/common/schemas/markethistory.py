@@ -21,9 +21,11 @@ class NewsSentimentBase(BaseModel):
     published_at: datetime
     title: str = Field(..., min_length=3, max_length=500)
     summary: Optional[str] = None
-    sentiment: Optional[Decimal] = Field(None, ge=-1, le=1)  
+    sentiment: Optional[Decimal] = Field(None, ge=-1, le=1)
     source: Optional[str] = None
-    symbol: Optional[str] = None
+
+    symbol_id: Optional[UUID] = None
+
     url: Optional[HttpUrl] = None
 class NewsSentimentCreate(NewsSentimentBase):
     pass
@@ -33,7 +35,9 @@ class NewsSentimentUpdate(BaseModel):
     summary: Optional[str] = None
     sentiment: Optional[Decimal] = Field(None, ge=-1, le=1)
     source: Optional[str] = None
-    symbol: Optional[str] = None
+
+    symbol_id: Optional[UUID] = None
+
     url: Optional[HttpUrl] = None
 class NewsSentimentOut(NewsSentimentBase):
     model_config = ConfigDict(from_attributes=True)
