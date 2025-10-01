@@ -7,11 +7,11 @@ from sqlalchemy import Column, BigInteger, Text, Numeric, TIMESTAMP, text
 from common.models.base import Base
 
 class PriceHistoryBase(BaseModel):
-    exchange: str
-    symbol: str
+    exchange_id: UUID
+    symbol_id: UUID
     price: Decimal = Field(..., gt=0)
 class PriceHistoryCreate(PriceHistoryBase):
-    timestamp: Optional[datetime] = None 
+    timestamp: Optional[datetime] = None
 class PriceHistoryOut(PriceHistoryBase):
     model_config = ConfigDict(from_attributes=True)
 

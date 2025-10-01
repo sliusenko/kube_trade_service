@@ -11,7 +11,6 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
-
 class PriceHistory(Base):
     __tablename__ = "price_history"
 
@@ -19,7 +18,7 @@ class PriceHistory(Base):
         BigInteger, primary_key=True, autoincrement=True
     )
 
-    # ✅ Тепер зберігаємо UUID біржі
+    # ✅ UUID біржі
     exchange_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("exchanges.id", ondelete="CASCADE"),
@@ -27,8 +26,8 @@ class PriceHistory(Base):
         index=True
     )
 
-    # ✅ символ лишається UUID (як і було)
-    symbol: Mapped[uuid.UUID] = mapped_column(
+    # ✅ symbol → symbol_id
+    symbol_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("exchange_symbols.id", ondelete="CASCADE"),
         nullable=False,
@@ -45,8 +44,7 @@ class PriceHistory(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<PriceHistory {self.exchange_id}:{self.symbol} {self.price} @ {self.timestamp}>"
-
+        return f"<PriceHistory {self.exchange_id}:{self.symbol_id} {self.price} @ {self.timestamp}>"
 class NewsSentiment(Base):
     __tablename__ = "news_sentiments"
 
