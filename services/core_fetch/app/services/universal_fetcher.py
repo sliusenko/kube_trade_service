@@ -30,6 +30,7 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
     Fetch latest price for a given symbol from an exchange and store in DB.
     Expects `symbol` as the exchange's symbol code (e.g. "BTCUSDT" for Binance or "XXBTZUSD" for Kraken).
     Saves PriceHistory.symbol as UUID (FK -> exchange_symbols.id).
+    Also logs event into ExchangeStatusHistory.
     """
     try:
         price: Optional[float] = None
@@ -96,6 +97,17 @@ async def fetch_and_store_price(exchange: str, symbol: str) -> None:
                 price=price,
             )
             session.add(record)
+
+            # 4) add event to ExchangeStatusHistory
+            session.add(
+                ExchangeStatusHistory(
+                    exchange_id=exchange_id,
+                    event="price_fetch",
+                    status="ok",
+                    message=f"Fetched {symbol}={price}",
+                )
+            )
+
             await session.commit()
 
         log.info(f"✅ Stored price {symbol}={price} ({exchange}) in DB")
