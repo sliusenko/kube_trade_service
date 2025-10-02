@@ -66,8 +66,11 @@ class TimeframeBase(BaseModel):
     hours: float | None = None
 class TimeframeCreate(TimeframeBase):
     pass
-class TimeframeUpdate(TimeframeBase):
-    pass
+class TimeframeUpdate(BaseModel):
+    lookback: int | None = None
+    history_limit: int | None = None
+    min_len: int | None = None
+    hours: float | None = None
 class TimeframeRead(TimeframeBase):
     id: int
 
