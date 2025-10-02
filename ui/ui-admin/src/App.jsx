@@ -8,7 +8,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const ExchangesPage = lazy(() => import("./pages/ExchangesPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
-const PageConfig = lazy(() => import("./pages/ConfigPage"));
+const ConfigPage = lazy(() => import("./pages/ConfigPage"));
 
 const Page = ({ title, children }) => (
   <div className="p-6">
