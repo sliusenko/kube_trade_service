@@ -13,7 +13,8 @@ import datetime as dt
 
 from common.models.markethistory import NewsSentiment, PriceHistory
 from common.models.exchanges import ExchangeSymbol
-from common.deps.config import settings
+from common.deps.config import CoreNewsSettings
+settings = CoreNewsSettings()
 
 log = logging.getLogger(__name__)
 
@@ -32,13 +33,19 @@ BLACKLIST_SOURCES = {"reddit.com"}
 # 🔑 Ключове слово → торговий символ (для прив’язки новини до symbol_id)
 KEYWORD_TO_SYMBOL = {
     "bitcoin": "BTCUSDT",
+    "Bitcoin": "BTCUSDT",
+    "Solana": "SOLUSDT",
+    "Ethereum": "ETHUSDT",
+    "Cardano": "ADAUSDT",
     "btc": "BTCUSDT",
+    "XRP": "XRPUSDT",
+    "CELRUSDT": "CELRUSDT",
     "ethereum": "ETHUSDT",
     "eth": "ETHUSDT",
     "binance": "BNBUSDT",
     "bnb": "BNBUSDT",
-    "sec": "BTCUSDT",  # умовно тягнемо до BTC
-    "hack": None,      # загальні новини про хак не мапимо на конкретний символ
+    "sec": "BTCUSDT",
+    "hack": None,
 }
 
 # Параметри оркестрації
