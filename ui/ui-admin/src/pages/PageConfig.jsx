@@ -11,6 +11,10 @@ import {
   TableCell,
   TableBody,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
 
@@ -34,21 +38,39 @@ export default function PageConfig() {
 
   // ---- Settings ----
   const [settings, setSettings] = useState([]);
-  const [settingForm, setSettingForm] = useState({ service_name: "", key: "", value: "" });
+  const [settingForm, setSettingForm] = useState({
+    service_name: "",
+    key: "",
+    value: "",
+    value_type: "str",   // завжди має бути
+  });
 
   async function loadSettings() {
     setSettings(await getSettings("core-admin"));
   }
+
   async function addSetting(e) {
     e.preventDefault();
-    await createSetting(settingForm);
-    setSettingForm({ service_name: "", key: "", value: "" });
+    const payload = {
+      service_name: settingForm.service_name,
+      key: settingForm.key,
+      value: settingForm.value,
+      value_type: settingForm.value_type || "str"
+    };
+    await createSetting(payload);
+    setSettingForm({ service_name: "", key: "", value: "", value_type: "str" });
     loadSettings();
   }
+
   async function saveSetting(s) {
-    await updateSetting(s.id, s);
+    const payload = {
+      ...s,
+      value_type: s.value_type || "str"
+    };
+    await updateSetting(s.id, payload);
     loadSettings();
   }
+
   async function removeSetting(id) {
     if (window.confirm("Видалити setting?")) {
       await deleteSetting(id);
@@ -58,19 +80,45 @@ export default function PageConfig() {
 
   // ---- Timeframes ----
   const [timeframes, setTimeframes] = useState([]);
-  const [tfForm, setTfForm] = useState({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
+  const [tfForm, setTfForm] = useState({
+    code: "",
+    history_limit: "",
+    min_len: "",
+    hours: "",
+    lookback: ""
+  });
 
-  async function loadTimeframes() { setTimeframes(await getTimeframes()); }
+  async function loadTimeframes() {
+    setTimeframes(await getTimeframes());
+  }
   async function addTimeframe(e) {
     e.preventDefault();
-    await createTimeframe(tfForm);
+    const payload = {
+      code: tfForm.code,
+      history_limit: parseInt(tfForm.history_limit, 10),
+      min_len: parseInt(tfForm.min_len, 10),
+      hours: parseFloat(tfForm.hours),
+      lookback: tfForm.lookback   // напр. "PT12H", "P1D"
+    };
+
+    await createTimeframe(payload);
     setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
     loadTimeframes();
   }
+
   async function saveTimeframe(tf) {
-    await updateTimeframe(tf.code, tf);
+    const payload = {
+      code: tf.code,
+      history_limit: parseInt(tf.history_limit, 10),
+      min_len: parseInt(tf.min_len, 10),
+      hours: parseFloat(tf.hours),
+      lookback: tf.lookback
+    };
+
+    await updateTimeframe(tf.code, payload);
     loadTimeframes();
   }
+
   async function removeTimeframe(code) {
     if (window.confirm("Видалити таймфрейм?")) {
       await deleteTimeframe(code);
@@ -78,21 +126,42 @@ export default function PageConfig() {
     }
   }
 
+
   // ---- Commands ----
   const [commands, setCommands] = useState([]);
-  const [cmdForm, setCmdForm] = useState({ command: "", group_name: "", description: "" });
+  const [cmdForm, setCmdForm] = useState({
+    command: "",
+    group_name: "",
+    description: ""
+  });
 
-  async function loadCommands() { setCommands(await getCommands()); }
+  async function loadCommands() {
+    setCommands(await getCommands());
+  }
+
   async function addCommand(e) {
     e.preventDefault();
-    await createCommand(cmdForm);
+    const payload = {
+      command: cmdForm.command,
+      group_name: cmdForm.group_name,
+      description: cmdForm.description || ""
+    };
+    await createCommand(payload);
     setCmdForm({ command: "", group_name: "", description: "" });
     loadCommands();
   }
+
   async function saveCommand(cmd) {
-    await updateCommand(cmd.id, cmd);
+    const payload = {
+      id: cmd.id,
+      command: cmd.command,
+      group_name: cmd.group_name,
+      description: cmd.description || ""
+    };
+    await updateCommand(cmd.id, payload);
     loadCommands();
   }
+
   async function removeCommand(id) {
     if (window.confirm("Видалити команду?")) {
       await deleteCommand(id);
@@ -100,21 +169,41 @@ export default function PageConfig() {
     }
   }
 
+
   // ---- Reasons ----
   const [reasons, setReasons] = useState([]);
-  const [reasonForm, setReasonForm] = useState({ code: "", description: "", category: "" });
+  const [reasonForm, setReasonForm] = useState({
+    code: "",
+    description: "",
+    category: ""
+  });
 
-  async function loadReasons() { setReasons(await getReasons()); }
+  async function loadReasons() {
+    setReasons(await getReasons());
+  }
+
   async function addReason(e) {
     e.preventDefault();
-    await createReason(reasonForm);
+    const payload = {
+      code: reasonForm.code,
+      description: reasonForm.description || "",
+      category: reasonForm.category || "MANUAL"   // дефолт, щоб не було пусто
+    };
+    await createReason(payload);
     setReasonForm({ code: "", description: "", category: "" });
     loadReasons();
   }
+
   async function saveReason(r) {
-    await updateReason(r.code, r);
+    const payload = {
+      code: r.code,
+      description: r.description || "",
+      category: r.category || "MANUAL"
+    };
+    await updateReason(r.code, payload);
     loadReasons();
   }
+
   async function removeReason(code) {
     if (window.confirm("Видалити reason?")) {
       await deleteReason(code);
@@ -122,27 +211,52 @@ export default function PageConfig() {
     }
   }
 
+
   // ---- Trade Profiles ----
   const [profiles, setProfiles] = useState([]);
-  const [profileForm, setProfileForm] = useState({ name: "", description: "" });
+  const [profileForm, setProfileForm] = useState({
+    user_id: "",
+    exchange_id: "",
+    name: "",
+    description: ""
+  });
 
-  async function loadProfiles() { setProfiles(await getTradeProfiles()); }
+  async function loadProfiles() {
+    setProfiles(await getTradeProfiles());
+  }
+
   async function addProfile(e) {
     e.preventDefault();
-    await createTradeProfile(profileForm);
-    setProfileForm({ name: "", description: "" });
+    const payload = {
+      user_id: profileForm.user_id,
+      exchange_id: profileForm.exchange_id,
+      name: profileForm.name,
+      description: profileForm.description || ""
+    };
+    await createTradeProfile(payload);
+    setProfileForm({ user_id: "", exchange_id: "", name: "", description: "" });
     loadProfiles();
   }
+
   async function saveProfile(p) {
-    await updateTradeProfile(p.id, p);
+    const payload = {
+      id: p.id,
+      user_id: p.user_id,
+      exchange_id: p.exchange_id,
+      name: p.name,
+      description: p.description || ""
+    };
+    await updateTradeProfile(p.id, payload);
     loadProfiles();
   }
+
   async function removeProfile(id) {
     if (window.confirm("Видалити профіль?")) {
       await deleteTradeProfile(id);
       loadProfiles();
     }
   }
+
 
   // ---- Trade Conditions ----
   const [conditions, setConditions] = useState([]);
@@ -154,6 +268,53 @@ export default function PageConfig() {
     param_2: "",
     priority: "",
   });
+
+  async function loadConditions() {
+    setConditions(await getTradeConditions());
+  }
+
+  async function addCondition(e) {
+    e.preventDefault();
+    const payload = {
+      profile_id: parseInt(conditionForm.profile_id, 10),
+      action: conditionForm.action,
+      condition_type: conditionForm.condition_type,
+      param_1: conditionForm.param_1 ? parseFloat(conditionForm.param_1) : null,
+      param_2: conditionForm.param_2 ? parseFloat(conditionForm.param_2) : null,
+      priority: parseInt(conditionForm.priority, 10)
+    };
+    await createTradeCondition(payload);
+    setConditionForm({
+      profile_id: "",
+      action: "",
+      condition_type: "",
+      param_1: "",
+      param_2: "",
+      priority: "",
+    });
+    loadConditions();
+  }
+
+  async function saveCondition(c) {
+    const payload = {
+      id: c.id,
+      profile_id: parseInt(c.profile_id, 10),
+      action: c.action,
+      condition_type: c.condition_type,
+      param_1: c.param_1 ? parseFloat(c.param_1) : null,
+      param_2: c.param_2 ? parseFloat(c.param_2) : null,
+      priority: parseInt(c.priority, 10)
+    };
+    await updateTradeCondition(c.id, payload);
+    loadConditions();
+  }
+
+  async function removeCondition(id) {
+    if (window.confirm("Видалити condition?")) {
+      await deleteTradeCondition(id);
+      loadConditions();
+    }
+  }
 
   async function loadConditions() { setConditions(await getTradeConditions()); }
   async function addCondition(e) {
@@ -449,10 +610,40 @@ export default function PageConfig() {
               <TableRow key={p.id}>
                 <TableCell>{p.id}</TableCell>
                 <TableCell>
-                  <TextField value={p.name || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x))} />
+                  <TextField value={p.user_id || ""} size="small"
+                    onChange={(e) =>
+                      setProfiles(prev =>
+                        prev.map(x => x.id === p.id ? { ...x, user_id: e.target.value } : x)
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField value={p.description || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x))} />
+                  <TextField value={p.exchange_id || ""} size="small"
+                    onChange={(e) =>
+                      setProfiles(prev =>
+                        prev.map(x => x.id === p.id ? { ...x, exchange_id: e.target.value } : x)
+                      )
+                    }
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField value={p.name || ""} size="small"
+                    onChange={(e) =>
+                      setProfiles(prev =>
+                        prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x)
+                      )
+                    }
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField value={p.description || ""} size="small"
+                    onChange={(e) =>
+                      setProfiles(prev =>
+                        prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x)
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell align="right">
                   <Button size="small" variant="contained" onClick={() => saveProfile(p)}>Зберегти</Button>
