@@ -15,31 +15,11 @@ import {
 import { Add, Delete } from "@mui/icons-material";
 
 import {
-  getTimeframes,
-  createTimeframe,
-  updateTimeframe,
-  deleteTimeframe,
-  getCommands,
-  createCommand,
-  updateCommand,
-  deleteCommand,
-  getReasons,
-  createReason,
-  updateReason,
-  deleteReason,
-  getTradeProfiles,
-  createTradeProfile,
-  updateTradeProfile,
-  deleteTradeProfile,
-  getTradeConditions,
-  createTradeCondition,
-  updateTradeCondition,
-  deleteTradeCondition,
-  getGroupIcons,
-  createGroupIcon,
-  updateGroupIcon,
-  deleteGroupIcon,
-} from "../api/config";
+  getTimeframes, createTimeframe, updateTimeframe, deleteTimeframe, getCommands,   createCommand,
+  updateCommand, deleteCommand, getReasons, createReason, updateReason, deleteReason, getTradeProfiles,
+  createTradeProfile, updateTradeProfile, deleteTradeProfile, getTradeConditions, createTradeCondition,
+  updateTradeCondition, deleteTradeCondition, getGroupIcons, createGroupIcon, updateGroupIcon,
+  deleteGroupIcon, getSettings, createSetting, updateSetting, deleteSetting} from "../api/config";
 
 function TabPanel({ children, value, index }) {
   return (
@@ -51,6 +31,30 @@ function TabPanel({ children, value, index }) {
 
 export default function PageConfig() {
   const [tab, setTab] = useState(0);
+
+  // ---- Settings ----
+  const [settings, setSettings] = useState([]);
+  const [settingForm, setSettingForm] = useState({ service_name: "", key: "", value: "" });
+
+  async function loadSettings() {
+    setSettings(await getSettings("core-admin"));
+  }
+  async function addSetting(e) {
+    e.preventDefault();
+    await createSetting(settingForm);
+    setSettingForm({ service_name: "", key: "", value: "" });
+    loadSettings();
+  }
+  async function saveSetting(s) {
+    await updateSetting(s.id, s);
+    loadSettings();
+  }
+  async function removeSetting(id) {
+    if (window.confirm("Видалити setting?")) {
+      await deleteSetting(id);
+      loadSettings();
+    }
+  }
 
   // ---- Timeframes ----
   const [timeframes, setTimeframes] = useState([]);
@@ -199,6 +203,7 @@ export default function PageConfig() {
     loadProfiles();
     loadConditions();
     loadIcons();
+    loadSettings();
   }, []);
 
   return (
@@ -207,6 +212,7 @@ export default function PageConfig() {
 
       <Paper>
         <Tabs value={tab} onChange={(e, v) => setTab(v)} indicatorColor="primary" textColor="primary">
+          <Tab label="Settings" />
           <Tab label="Timeframes" />
           <Tab label="Commands" />
           <Tab label="Reasons" />
@@ -215,6 +221,51 @@ export default function PageConfig() {
           <Tab label="Group Icons" />
         </Tabs>
       </Paper>
+
+      {/* ---- Settings ---- */}
+      <TabPanel value={tab} index={6}>
+        <form onSubmit={addSetting} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <TextField label="Service Name" value={settingForm.service_name}
+            onChange={(e) => setSettingForm({ ...settingForm, service_name: e.target.value })} />
+          <TextField label="Key" value={settingForm.key}
+            onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })} />
+          <TextField label="Value" value={settingForm.value}
+            onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })} />
+          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
+        </form>
+
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Service</TableCell>
+              <TableCell>Key</TableCell>
+              <TableCell>Value</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {settings.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>{s.id}</TableCell>
+                <TableCell>{s.service_name}</TableCell>
+                <TableCell>
+                  <TextField value={s.key || ""} size="small"
+                    onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, key: e.target.value } : x))} />
+                </TableCell>
+                <TableCell>
+                  <TextField value={s.value || ""} size="small"
+                    onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, value: e.target.value } : x))} />
+                </TableCell>
+                <TableCell align="right">
+                  <Button size="small" variant="contained" onClick={() => saveSetting(s)}>Зберегти</Button>
+                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeSetting(s.id)}>Видалити</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TabPanel>
 
       {/* ---- Timeframes ---- */}
       <TabPanel value={tab} index={0}>
