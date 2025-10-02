@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 from pydantic import BaseModel, condecimal
 from decimal import Decimal
@@ -61,19 +61,19 @@ class TimeframeCreate(BaseModel):
     code: str
     history_limit: Optional[int]
     min_len: Optional[int]
-    hours: Optional[float]
-    lookback: Optional[str]
+    hours: Optional[Decimal]
+    lookback: Optional[timedelta]
 class TimeframeUpdate(BaseModel):
     history_limit: Optional[int] = None
     min_len: Optional[int] = None
-    hours: Optional[float]  = None
-    lookback: Optional[str] = None
+    hours: Optional[Decimal] = None
+    lookback: Optional[timedelta] = None
 class TimeframeRead(BaseModel):
     code: str
     history_limit: int
     min_len: int
     hours: Decimal
-    lookback: Optional[str]
+    lookback: Optional[timedelta]
 
     class Config:
         from_attributes = True

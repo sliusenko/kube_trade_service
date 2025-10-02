@@ -31,7 +31,7 @@ class GroupIcon(Base):
     icon = Column(String, nullable=False)
 class Timeframe(Base):
     __tablename__ = "timeframes"
-    code = Column(String, primary_key=True)  # "1m", "15m", "1h"
+    code = Column(String, primary_key=True)
     history_limit = Column(Integer)
     min_len = Column(Integer)
     hours = Column(Numeric)
