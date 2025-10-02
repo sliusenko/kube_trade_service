@@ -25,7 +25,7 @@ NEWS_PARAMS = settings.NEWS_PARAMS
 BLACKLIST_SOURCES = settings.BLACKLIST_SOURCES
 KEYWORD_TO_SYMBOL = settings.KEYWORD_TO_SYMBOL
 DEFAULT_HALT_THRESHOLD = settings.DEFAULT_HALT_THRESHOLD
-DEFAULT_LOOKBACK_HOURS = settings.DEFAULT_LOOKBACK_HOURS
+UPDATE_NEWS_PRICES_INTERVAL_HOURS = settings.UPDATE_NEWS_PRICES_INTERVAL_HOURS
 
 def _parse_ts(ts_str: str) -> Optional[datetime]:
     if not ts_str:
@@ -171,7 +171,7 @@ async def update_news_prices(session: AsyncSession) -> None:
     log.info("✅ Updated prices for %s news items", len(results))
 
 # === Агрегація сентименту та HALT-логіка ===
-async def _avg_recent_sentiment(session: AsyncSession, hours: int = DEFAULT_LOOKBACK_HOURS) -> Optional[float]:
+async def _avg_recent_sentiment(session: AsyncSession, hours: int = UPDATE_NEWS_PRICES_INTERVAL_HOURS) -> Optional[float]:
     """Середній compound-сентимент новин за останні N годин з NewsSentiment."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
     q = select(func.avg(NewsSentiment.sentiment)).where(NewsSentiment.published_at >= cutoff)
@@ -201,7 +201,7 @@ async def check_news_and_halt_trading(session: AsyncSession) -> None:
         log.warning("⚠️ update_news_prices failed: %s", e)
 
     # 4) aggregate & decision
-    lookback_h = getattr(settings, "NEWS_LOOKBACK_HOURS", None) or int(os.getenv("NEWS_LOOKBACK_HOURS", DEFAULT_LOOKBACK_HOURS))
+    lookback_h = getattr(settings, "NEWS_LOOKBACK_HOURS", None) or int(os.getenv("NEWS_LOOKBACK_HOURS", UPDATE_NEWS_PRICES_INTERVAL_HOURS))
     avg_sent = await _avg_recent_sentiment(session, hours=lookback_h)
     if avg_sent is None:
         log.info("ℹ️ No news in the last %s hours to aggregate sentiment", lookback_h)

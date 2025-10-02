@@ -19,23 +19,26 @@ settings = BaseSettings()
 
 class CoreNewsSettings(BaseSettings):
     # === API ===
-    NEWSAPI_KEY: Optional[str] = None
-    NEWS_ENDPOINT: str = "https://newsapi.org/v2/everything"
+    NEWSAPI_KEY: Optional[str] = os.getenv("NEWSAPI_KEY")
+    NEWS_ENDPOINT: str = os.getenv("NEWS_ENDPOINT", "https://newsapi.org/v2/everything")
 
     # === Schedulers ===
-    UPDATE_NEWS_PRICES_INTERVAL_HOURS: int = 10
+    UPDATE_NEWS_PRICES_INTERVAL_HOURS: int = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "4"))
 
     # === Query params ===
-    NEWS_PARAMS: Dict = {
+    NEWS_PARAMS: Dict = json.loads(os.getenv("NEWS_PARAMS", """
+    {
         "q": "bitcoin OR ethereum OR binance OR sec OR hack",
         "language": "en",
         "sortBy": "publishedAt",
-        "pageSize": 10,
+        "pageSize": 10
     }
-    NEWS_QUERY: str = "bitcoin OR ethereum OR binance OR sec OR hack"
+    """))
+    NEWS_QUERY: str = os.getenv("NEWS_QUERY", "bitcoin OR ethereum OR binance OR sec OR hack")
 
     # === Mapping keywords to symbols ===
-    KEYWORD_TO_SYMBOL: Dict = {
+    KEYWORD_TO_SYMBOL: Dict = json.loads(os.getenv("KEYWORD_TO_SYMBOL", """
+    {
         "bitcoin": "BTCUSDT",
         "btc": "BTCUSDT",
         "solana": "SOLUSDT",
@@ -47,14 +50,23 @@ class CoreNewsSettings(BaseSettings):
         "binance": "BNBUSDT",
         "bnb": "BNBUSDT",
         "sec": "BTCUSDT",
-        "hack": None,
+        "hack": null
     }
+    """))
 
     # === Sentiment / Sources ===
-    NEGATIVE_THRESHOLD: float = -0.8
-    WHITELIST_SOURCES: Set[str] = {"CoinDesk", "Cointelegraph", "Decrypt", "Bloomberg"}
-    BLACKLIST_SOURCES: Set[str] = {"reddit.com"}
-    SOURCE_WEIGHTS: Dict[str, float] = {
+    DEFAULT_HALT_THRESHOLD: float = float(os.getenv("DEFAULT_HALT_THRESHOLD", "-0.8"))
+
+    WHITELIST_SOURCES: Set[str] = set(json.loads(os.getenv("WHITELIST_SOURCES", """
+    ["CoinDesk", "Cointelegraph", "Decrypt", "Bloomberg"]
+    """)))
+
+    BLACKLIST_SOURCES: Set[str] = set(json.loads(os.getenv("BLACKLIST_SOURCES", """
+    ["reddit.com"]
+    """)))
+
+    SOURCE_WEIGHTS: Dict[str, float] = json.loads(os.getenv("SOURCE_WEIGHTS", """
+    {
         "The Daily Caller": 1.0,
         "Newsweek": 0.95,
         "Financial Post": 0.9,
@@ -69,12 +81,9 @@ class CoreNewsSettings(BaseSettings):
         "Cointelegraph": 0.7,
         "Decrypt": 0.7,
         "Bloomberg": 0.85,
-        "default": 0.5,
+        "default": 0.5
     }
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    """))
 
 class CoreAdminSettings(BaseSettings):
     ADMIN_DEFAULT_USER: str = os.getenv("ADMIN_DEFAULT_USER", "admin")
