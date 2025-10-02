@@ -19,11 +19,14 @@ import {
 import { Add, Delete } from "@mui/icons-material";
 
 import {
-  getTimeframes, createTimeframe, updateTimeframe, deleteTimeframe, getCommands,   createCommand,
-  updateCommand, deleteCommand, getReasons, createReason, updateReason, deleteReason, getTradeProfiles,
-  createTradeProfile, updateTradeProfile, deleteTradeProfile, getTradeConditions, createTradeCondition,
-  updateTradeCondition, deleteTradeCondition, getGroupIcons, createGroupIcon, updateGroupIcon,
-  deleteGroupIcon, getSettings, createSetting, updateSetting, deleteSetting} from "../api/config";
+  getTimeframes, createTimeframe, updateTimeframe, deleteTimeframe,
+  getCommands, createCommand, updateCommand, deleteCommand,
+  getReasons, createReason, updateReason, deleteReason,
+  getTradeProfiles, createTradeProfile, updateTradeProfile, deleteTradeProfile,
+  getTradeConditions, createTradeCondition, updateTradeCondition, deleteTradeCondition,
+  getGroupIcons, createGroupIcon, updateGroupIcon, deleteGroupIcon,
+  getSettings, createSetting, updateSetting, deleteSetting
+} from "../api/config";
 
 function TabPanel({ children, value, index }) {
   return (
@@ -42,13 +45,10 @@ export default function PageConfig() {
     service_name: "",
     key: "",
     value: "",
-    value_type: "str",   // завжди має бути
+    value_type: "str",
   });
 
-  async function loadSettings() {
-    setSettings(await getSettings());
-  }
-
+  async function loadSettings() { setSettings(await getSettings()); }
   async function addSetting(e) {
     e.preventDefault();
     const payload = {
@@ -61,16 +61,11 @@ export default function PageConfig() {
     setSettingForm({ service_name: "", key: "", value: "", value_type: "str" });
     loadSettings();
   }
-
   async function saveSetting(s) {
-    const payload = {
-      ...s,
-      value_type: s.value_type || "str"
-    };
+    const payload = { ...s, value_type: s.value_type || "str" };
     await updateSetting(s.id, payload);
     loadSettings();
   }
-
   async function removeSetting(id) {
     if (window.confirm("Видалити setting?")) {
       await deleteSetting(id);
@@ -81,16 +76,10 @@ export default function PageConfig() {
   // ---- Timeframes ----
   const [timeframes, setTimeframes] = useState([]);
   const [tfForm, setTfForm] = useState({
-    code: "",
-    history_limit: "",
-    min_len: "",
-    hours: "",
-    lookback: ""
+    code: "", history_limit: "", min_len: "", hours: "", lookback: ""
   });
 
-  async function loadTimeframes() {
-    setTimeframes(await getTimeframes());
-  }
+  async function loadTimeframes() { setTimeframes(await getTimeframes()); }
   async function addTimeframe(e) {
     e.preventDefault();
     const payload = {
@@ -100,17 +89,10 @@ export default function PageConfig() {
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
       lookback: tfForm.lookback || null
     };
-
-    try {
-      await createTimeframe(payload);
-      setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
-      loadTimeframes();
-    } catch (err) {
-      console.error("❌ Помилка при створенні timeframe:", err);
-      alert("Не вдалося додати timeframe. Перевір чи немає дубля по code.");
-    }
+    await createTimeframe(payload);
+    setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
+    loadTimeframes();
   }
-
   async function saveTimeframe(tf) {
     const payload = {
       code: tf.code,
@@ -119,11 +101,9 @@ export default function PageConfig() {
       hours: parseFloat(tf.hours),
       lookback: tf.lookback
     };
-
     await updateTimeframe(tf.code, payload);
     loadTimeframes();
   }
-
   async function removeTimeframe(code) {
     if (window.confirm("Видалити таймфрейм?")) {
       await deleteTimeframe(code);
@@ -131,19 +111,11 @@ export default function PageConfig() {
     }
   }
 
-
   // ---- Commands ----
   const [commands, setCommands] = useState([]);
-  const [cmdForm, setCmdForm] = useState({
-    command: "",
-    group_name: "",
-    description: ""
-  });
+  const [cmdForm, setCmdForm] = useState({ command: "", group_name: "", description: "" });
 
-  async function loadCommands() {
-    setCommands(await getCommands());
-  }
-
+  async function loadCommands() { setCommands(await getCommands()); }
   async function addCommand(e) {
     e.preventDefault();
     const payload = {
@@ -155,18 +127,11 @@ export default function PageConfig() {
     setCmdForm({ command: "", group_name: "", description: "" });
     loadCommands();
   }
-
   async function saveCommand(cmd) {
-    const payload = {
-      id: cmd.id,
-      command: cmd.command,
-      group_name: cmd.group_name,
-      description: cmd.description || ""
-    };
+    const payload = { id: cmd.id, command: cmd.command, group_name: cmd.group_name, description: cmd.description || "" };
     await updateCommand(cmd.id, payload);
     loadCommands();
   }
-
   async function removeCommand(id) {
     if (window.confirm("Видалити команду?")) {
       await deleteCommand(id);
@@ -174,41 +139,27 @@ export default function PageConfig() {
     }
   }
 
-
   // ---- Reasons ----
   const [reasons, setReasons] = useState([]);
-  const [reasonForm, setReasonForm] = useState({
-    code: "",
-    description: "",
-    category: ""
-  });
+  const [reasonForm, setReasonForm] = useState({ code: "", description: "", category: "" });
 
-  async function loadReasons() {
-    setReasons(await getReasons());
-  }
-
+  async function loadReasons() { setReasons(await getReasons()); }
   async function addReason(e) {
     e.preventDefault();
     const payload = {
       code: reasonForm.code,
       description: reasonForm.description || "",
-      category: reasonForm.category || "MANUAL"   // дефолт, щоб не було пусто
+      category: reasonForm.category || "MANUAL"
     };
     await createReason(payload);
     setReasonForm({ code: "", description: "", category: "" });
     loadReasons();
   }
-
   async function saveReason(r) {
-    const payload = {
-      code: r.code,
-      description: r.description || "",
-      category: r.category || "MANUAL"
-    };
+    const payload = { code: r.code, description: r.description || "", category: r.category || "MANUAL" };
     await updateReason(r.code, payload);
     loadReasons();
   }
-
   async function removeReason(code) {
     if (window.confirm("Видалити reason?")) {
       await deleteReason(code);
@@ -216,30 +167,20 @@ export default function PageConfig() {
     }
   }
 
-
   // ---- Trade Profiles ----
   const [profiles, setProfiles] = useState([]);
-  const [profileForm, setProfileForm] = useState({
-    user_id: "",
-    exchange_id: "",
-    name: "",
-    description: ""
-  });
+  const [profileForm, setProfileForm] = useState({ user_id: "", exchange_id: "", name: "", description: "" });
 
   async function loadProfiles() {
     const data = await getTradeProfiles();
-    // перетворення camelCase → snake_case
-    setProfiles(
-      data.map((p) => ({
-        id: p.id,
-        user_id: p.user_id || p.userId,
-        exchange_id: p.exchange_id || p.exchangeId,
-        name: p.name,
-        description: p.description
-      }))
-    );
+    setProfiles(data.map((p) => ({
+      id: p.id,
+      user_id: p.user_id || p.userId,
+      exchange_id: p.exchange_id || p.exchangeId,
+      name: p.name,
+      description: p.description
+    })));
   }
-
   async function addProfile(e) {
     e.preventDefault();
     const payload = {
@@ -252,19 +193,11 @@ export default function PageConfig() {
     setProfileForm({ user_id: "", exchange_id: "", name: "", description: "" });
     loadProfiles();
   }
-
   async function saveProfile(p) {
-    const payload = {
-      id: p.id,
-      user_id: p.user_id,
-      exchange_id: p.exchange_id,
-      name: p.name,
-      description: p.description || ""
-    };
+    const payload = { id: p.id, user_id: p.user_id, exchange_id: p.exchange_id, name: p.name, description: p.description || "" };
     await updateTradeProfile(p.id, payload);
     loadProfiles();
   }
-
   async function removeProfile(id) {
     if (window.confirm("Видалити профіль?")) {
       await deleteTradeProfile(id);
@@ -275,18 +208,10 @@ export default function PageConfig() {
   // ---- Trade Conditions ----
   const [conditions, setConditions] = useState([]);
   const [conditionForm, setConditionForm] = useState({
-    profile_id: "",
-    action: "",
-    condition_type: "",
-    param_1: "",
-    param_2: "",
-    priority: "",
+    profile_id: "", action: "", condition_type: "", param_1: "", param_2: "", priority: "",
   });
 
-  async function loadConditions() {
-    setConditions(await getTradeConditions());
-  }
-
+  async function loadConditions() { setConditions(await getTradeConditions()); }
   async function addCondition(e) {
     e.preventDefault();
     const payload = {
@@ -298,17 +223,9 @@ export default function PageConfig() {
       priority: parseInt(conditionForm.priority, 10)
     };
     await createTradeCondition(payload);
-    setConditionForm({
-      profile_id: "",
-      action: "",
-      condition_type: "",
-      param_1: "",
-      param_2: "",
-      priority: "",
-    });
+    setConditionForm({ profile_id: "", action: "", condition_type: "", param_1: "", param_2: "", priority: "" });
     loadConditions();
   }
-
   async function saveCondition(c) {
     const payload = {
       id: c.id,
@@ -320,25 +237,6 @@ export default function PageConfig() {
       priority: parseInt(c.priority, 10)
     };
     await updateTradeCondition(c.id, payload);
-    loadConditions();
-  }
-
-  async function removeCondition(id) {
-    if (window.confirm("Видалити condition?")) {
-      await deleteTradeCondition(id);
-      loadConditions();
-    }
-  }
-
-  async function loadConditions() { setConditions(await getTradeConditions()); }
-  async function addCondition(e) {
-    e.preventDefault();
-    await createTradeCondition(conditionForm);
-    setConditionForm({ profile_id: "", action: "", condition_type: "", param_1: "", param_2: "", priority: "" });
-    loadConditions();
-  }
-  async function saveCondition(c) {
-    await updateTradeCondition(c.id, c);
     loadConditions();
   }
   async function removeCondition(id) {
@@ -359,10 +257,7 @@ export default function PageConfig() {
     setIconForm({ group_name: "", icon: "" });
     loadIcons();
   }
-  async function saveIcon(ic) {
-    await updateGroupIcon(ic.group_name, ic);
-    loadIcons();
-  }
+  async function saveIcon(ic) { await updateGroupIcon(ic.group_name, ic); loadIcons(); }
   async function removeIcon(name) {
     if (window.confirm("Видалити іконку?")) {
       await deleteGroupIcon(name);
@@ -384,7 +279,6 @@ export default function PageConfig() {
   return (
     <div className="p-6">
       <h1 style={{ fontSize: 28, marginBottom: 12 }}>Core Config</h1>
-
       <Paper>
         <Tabs value={tab} onChange={(e, v) => setTab(v)} indicatorColor="primary" textColor="primary">
           <Tab label="Settings" />
@@ -399,35 +293,15 @@ export default function PageConfig() {
 
       {/* ---- Settings ---- */}
       <TabPanel value={tab} index={0}>
-
-        <form
-          onSubmit={addSetting}
-          style={{ display: "flex", gap: 8, marginBottom: 12 }}
-        >
-          <TextField
-            label="Service Name"
-            value={settingForm.service_name}
-            onChange={(e) =>
-              setSettingForm({ ...settingForm, service_name: e.target.value })
-            }
-          />
-          <TextField
-            label="Key"
-            value={settingForm.key}
-            onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })}
-          />
-          <TextField
-            label="Value"
-            value={settingForm.value}
-            onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })}
-          />
+        <form onSubmit={addSetting} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <TextField label="Service Name" value={settingForm.service_name} onChange={(e) => setSettingForm({ ...settingForm, service_name: e.target.value })} />
+          <TextField label="Key" value={settingForm.key} onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })} />
+          <TextField label="Value" value={settingForm.value} onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })} />
           <FormControl>
             <InputLabel>Value Type</InputLabel>
             <Select
               value={settingForm.value_type}
-              onChange={(e) =>
-                setSettingForm({ ...settingForm, value_type: e.target.value })
-              }
+              onChange={(e) => setSettingForm({ ...settingForm, value_type: e.target.value })}
               style={{ minWidth: 120 }}
             >
               <MenuItem value="str">text (str)</MenuItem>
@@ -436,11 +310,8 @@ export default function PageConfig() {
               <MenuItem value="int">int</MenuItem>
             </Select>
           </FormControl>
-          <Button type="submit" variant="contained" startIcon={<Add />}>
-            Додати
-          </Button>
+          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
         </form>
-
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -457,12 +328,10 @@ export default function PageConfig() {
                 <TableCell>{s.id}</TableCell>
                 <TableCell>{s.service_name}</TableCell>
                 <TableCell>
-                  <TextField value={s.key || ""} size="small"
-                    onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, key: e.target.value } : x))} />
+                  <TextField value={s.key || ""} size="small" onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, key: e.target.value } : x))} />
                 </TableCell>
                 <TableCell>
-                  <TextField value={s.value || ""} size="small"
-                    onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, value: e.target.value } : x))} />
+                  <TextField value={s.value || ""} size="small" onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, value: e.target.value } : x))} />
                 </TableCell>
                 <TableCell align="right">
                   <Button size="small" variant="contained" onClick={() => saveSetting(s)}>Зберегти</Button>
@@ -600,18 +469,14 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Trade Profiles ---- */}
-<TabPanel value={tab} index={4}>
-  <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-    <TextField label="UserID" value={profileForm.user_id}
-      onChange={(e) => setProfileForm({ ...profileForm, user_id: e.target.value })} />
-    <TextField label="ExchangeID" value={profileForm.exchange_id}
-      onChange={(e) => setProfileForm({ ...profileForm, exchange_id: e.target.value })} />
-    <TextField label="Name" value={profileForm.name}
-      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
-    <TextField label="Description" value={profileForm.description}
-      onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
-    <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
-  </form>
+      <TabPanel value={tab} index={4}>
+        <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <TextField label="UserID" value={profileForm.user_id} onChange={(e) => setProfileForm({ ...profileForm, user_id: e.target.value })} />
+          <TextField label="ExchangeID" value={profileForm.exchange_id} onChange={(e) => setProfileForm({ ...profileForm, exchange_id: e.target.value })} />
+          <TextField label="Name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
+          <TextField label="Description" value={profileForm.description} onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
+          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
+        </form>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -628,40 +493,16 @@ export default function PageConfig() {
               <TableRow key={p.id}>
                 <TableCell>{p.id}</TableCell>
                 <TableCell>
-                  <TextField value={p.user_id || ""} size="small"
-                    onChange={(e) =>
-                      setProfiles(prev =>
-                        prev.map(x => x.id === p.id ? { ...x, user_id: e.target.value } : x)
-                      )
-                    }
-                  />
+                  <TextField value={p.user_id || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, user_id: e.target.value } : x))} />
                 </TableCell>
                 <TableCell>
-                  <TextField value={p.exchange_id || ""} size="small"
-                    onChange={(e) =>
-                      setProfiles(prev =>
-                        prev.map(x => x.id === p.id ? { ...x, exchange_id: e.target.value } : x)
-                      )
-                    }
-                  />
+                  <TextField value={p.exchange_id || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, exchange_id: e.target.value } : x))} />
                 </TableCell>
                 <TableCell>
-                  <TextField value={p.name || ""} size="small"
-                    onChange={(e) =>
-                      setProfiles(prev =>
-                        prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x)
-                      )
-                    }
-                  />
+                  <TextField value={p.name || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, name: e.target.value } : x))} />
                 </TableCell>
                 <TableCell>
-                  <TextField value={p.description || ""} size="small"
-                    onChange={(e) =>
-                      setProfiles(prev =>
-                        prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x)
-                      )
-                    }
-                  />
+                  <TextField value={p.description || ""} size="small" onChange={(e) => setProfiles(prev => prev.map(x => x.id === p.id ? { ...x, description: e.target.value } : x))} />
                 </TableCell>
                 <TableCell align="right">
                   <Button size="small" variant="contained" onClick={() => saveProfile(p)}>Зберегти</Button>
@@ -701,7 +542,9 @@ export default function PageConfig() {
             {conditions.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>{c.id}</TableCell>
-                <TableCell>{c.profile_id}</TableCell>
+                <TableCell>
+                  <TextField value={c.profile_id || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, profile_id: e.target.value } : x))} />
+                </TableCell>
                 <TableCell>
                   <TextField value={c.action || ""} size="small" onChange={(e) => setConditions(prev => prev.map(x => x.id === c.id ? { ...x, action: e.target.value } : x))} />
                 </TableCell>
