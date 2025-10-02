@@ -1,7 +1,10 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval, TIMESTAMP, func, UniqueConstraint
-from sqlalchemy.orm import relationship
+import datetime as dt
+from typing import Optional, List
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 class Setting(Base):
@@ -43,9 +46,32 @@ class ReasonCode(Base):
     category = Column(String, nullable=False)  # BUY / SELL / FILTER / MANUAL
 class TradeProfile(Base):
     __tablename__ = "trade_profiles"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(Text)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+
+    # нові поля
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False
+    )
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # relationships
+    user: Mapped["User"] = relationship("User", back_populates="trade_profiles")
+    exchange: Mapped["Exchange"] = relationship("Exchange", back_populates="trade_profiles")
+    conditions: Mapped[List["TradeCondition"]] = relationship(
+        "TradeCondition", back_populates="profile", cascade="all, delete"
+    )
+
+    def __repr__(self) -> str:
+        return f"<TradeProfile {self.id} user={self.user_id} exchange={self.exchange_id}>"
 class TradeCondition(Base):
     __tablename__ = "trade_conditions"
     id = Column(Integer, primary_key=True, index=True)

@@ -36,6 +36,10 @@ class User(Base):
         back_populates="users"
     )
 
+    trade_profiles: Mapped[List["TradeProfile"]] = relationship(
+        "TradeProfile", back_populates="user", cascade="all, delete"
+    )
+
     __table_args__ = (
         Index("ix_users_created_at", "created_at"),
     )

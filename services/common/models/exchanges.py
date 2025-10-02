@@ -92,6 +92,9 @@ class Exchange(Base):
     fees: Mapped[List["ExchangeFee"]] = relationship(  # type: ignore[name-defined]
         back_populates="exchange", cascade="all, delete-orphan"
     )
+    trade_profiles: Mapped[List["TradeProfile"]] = relationship(
+        "TradeProfile", back_populates="exchange", cascade="all, delete"
+    )
 
     def __repr__(self) -> str:
         return f"<Exchange {self.code} ({self.environment}) active={self.is_active}>"
