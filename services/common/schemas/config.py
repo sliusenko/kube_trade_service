@@ -58,49 +58,21 @@ class GroupIconRead(BaseModel):
 
 # -------- Timeframes --------
 # -------- Timeframes --------
-class TimeframeCreate(BaseModel):
+class TimeframeBase(BaseModel):
     code: str
-    history_limit: Optional[int]
-    min_len: Optional[int]
-    hours: Optional[Decimal]
-    lookback: Optional[int]
-
-    @field_validator("lookback", mode="before")
-    def convert_seconds_to_timedelta(cls, v):
-        if v is None:
-            return None
-        return timedelta(seconds=int(v))
-class TimeframeUpdate(BaseModel):
-    history_limit: Optional[int] = None
-    min_len: Optional[int] = None
-    hours: Optional[Decimal] = None
-    lookback: Optional[int] = None
-
-    @field_validator("lookback", mode="before")
-    def convert_seconds_to_timedelta(cls, v):
-        if v is None:
-            return None
-        return timedelta(seconds=int(v))
-class TimeframeRead(BaseModel):
-    code: str
-    history_limit: int
-    min_len: int
-    hours: Decimal
-    lookback: Optional[int]
-
-    @classmethod
-    def from_orm(cls, obj):
-        return cls(
-            code=obj.code,
-            history_limit=obj.history_limit,
-            min_len=obj.min_len,
-            hours=obj.hours,
-            lookback=int(obj.lookback.total_seconds()) if obj.lookback else None
-        )
+    lookback: int | None = None   # секундами
+    history_limit: int | None = None
+    min_len: int | None = None
+    hours: float | None = None
+class TimeframeCreate(TimeframeBase):
+    pass
+class TimeframeUpdate(TimeframeBase):
+    pass
+class TimeframeRead(TimeframeBase):
+    id: int
 
     class Config:
         from_attributes = True
-        orm_mode = True
 
 # -------- Reasons --------
 class ReasonCodeCreate(BaseModel):

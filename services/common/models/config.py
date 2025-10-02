@@ -1,6 +1,9 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval, TIMESTAMP, func, UniqueConstraint
+from sqlalchemy import (
+    Column, Integer, String, Text, ForeignKey, Numeric,
+    Interval, TIMESTAMP, func, UniqueConstraint, Float
+)
 import datetime as dt
 from typing import Optional, List
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -34,11 +37,13 @@ class GroupIcon(Base):
     icon = Column(String, nullable=False)
 class Timeframe(Base):
     __tablename__ = "timeframes"
-    code = Column(String, primary_key=True)
-    history_limit = Column(Integer)
-    min_len = Column(Integer)
-    hours = Column(Numeric)
-    lookback = Column(Interval)
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String, nullable=False, unique=True)
+    lookback = Column(Integer, nullable=True)  # секундами
+    history_limit = Column(Integer, nullable=True)
+    min_len = Column(Integer, nullable=True)
+    hours = Column(Float, nullable=True)
 class ReasonCode(Base):
     __tablename__ = "reason_codes"
     code = Column(String, primary_key=True)
