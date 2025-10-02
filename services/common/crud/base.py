@@ -3,10 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from typing import Type, TypeVar, Generic, List
+import logging
+
+log = logging.getLogger(__name__)
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType")
 UpdateSchemaType = TypeVar("UpdateSchemaType")
+
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: Type[ModelType]):
@@ -27,9 +31,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await db.commit()
             await db.refresh(obj)
             return obj
-        except IntegrityError:
+        except IntegrityError as e:
             await db.rollback()
-            raise HTTPException(status_code=400, detail="Duplicate entry")
+            log.error(f"❌ IntegrityError while creating {self.model.__tablename__}: {e.orig}")
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e.orig)}")
 
     async def update(self, db: AsyncSession, db_obj: ModelType, obj_in: UpdateSchemaType) -> ModelType:
         update_data = obj_in.dict(exclude_unset=True)
@@ -39,9 +44,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await db.commit()
             await db.refresh(db_obj)
             return db_obj
-        except IntegrityError:
+        except IntegrityError as e:
             await db.rollback()
-            raise HTTPException(status_code=400, detail="Duplicate entry")
+            log.error(f"❌ IntegrityError while updating {self.model.__tablename__}: {e.orig}")
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e.orig)}")
 
     async def delete(self, db: AsyncSession, db_obj: ModelType):
         await db.delete(db_obj)
