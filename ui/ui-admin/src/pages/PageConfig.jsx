@@ -111,11 +111,6 @@ export default function PageConfig() {
     }
   }
 
-    await createTimeframe(payload);
-    setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
-    loadTimeframes();
-  }
-
   async function saveTimeframe(tf) {
     const payload = {
       code: tf.code,

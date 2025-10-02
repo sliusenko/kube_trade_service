@@ -11,6 +11,13 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 crud = CRUDBase[Setting, SettingCreate, SettingUpdate](Setting)
 
+@router.get("/", response_model=list[SettingRead])
+async def list_all_settings(db: AsyncSession = Depends(get_session)):
+    """Отримати всі налаштування для всіх сервісів"""
+    result = await db.execute(select(Setting))
+    return result.scalars().all()
+
+
 @router.get("/{service_name}", response_model=list[SettingRead])
 async def list_settings(service_name: str, db: AsyncSession = Depends(get_session)):
     """Отримати всі налаштування конкретного сервісу"""
