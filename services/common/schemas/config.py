@@ -1,6 +1,29 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
+from uuid import UUID
 
+class SettingCreate(BaseModel):
+    service_name: str
+    key: str
+    value: str
+    value_type: str = "str"
+
+class SettingUpdate(BaseModel):
+    value: str
+    value_type: str = "str"
+
+class SettingRead(BaseModel):
+    id: UUID
+    service_name: str
+    key: str
+    value: str
+    value_type: str
+    updated_at: datetime
+    updated_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class CommandSchema(BaseModel):
     id: int

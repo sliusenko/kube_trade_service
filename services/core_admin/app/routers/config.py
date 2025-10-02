@@ -26,6 +26,23 @@ async def forward_request(method: str, path: str, data: dict | None = None):
         except Exception as e:
             raise HTTPException(status_code=502, detail=str(e))
 
+# -------- Settings CRUD --------
+@router.get("/settings/{service_name}")
+async def list_settings(service_name: str):
+    return await forward_request("GET", f"/settings/{service_name}")
+
+@router.post("/settings")
+async def create_setting(data: dict):
+    return await forward_request("POST", "/settings", data)
+
+@router.put("/settings/{setting_id}")
+async def update_setting(setting_id: str, data: dict):
+    return await forward_request("PUT", f"/settings/{setting_id}", data)
+
+@router.delete("/settings/{setting_id}")
+async def delete_setting(setting_id: str):
+    return await forward_request("DELETE", f"/settings/{setting_id}")
+
 # -------- Timeframes --------
 @router.get("/timeframes")
 async def list_timeframes():

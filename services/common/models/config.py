@@ -1,7 +1,24 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval, TIMESTAMP, func
 from sqlalchemy.orm import relationship
 from .base import Base
 
+class Setting(Base):
+    __tablename__ = "settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    service_name = Column(String, nullable=False)
+    key = Column(String, nullable=False)
+    value = Column(Text, nullable=False)
+    value_type = Column(String, nullable=False, default="str")
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    updated_by = Column(String)
+
+    __table_args__ = (
+        # Забороняємо дублікати ключів у межах сервісу
+        {"sqlite_autoincrement": True},
+    )
 
 class Command(Base):
     __tablename__ = "commands"
