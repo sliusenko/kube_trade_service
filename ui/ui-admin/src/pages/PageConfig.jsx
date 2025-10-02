@@ -197,13 +197,13 @@ export default function PageConfig() {
 
   // ---- Lifecycle ----
   useEffect(() => {
+    loadSettings();
     loadTimeframes();
     loadCommands();
     loadReasons();
     loadProfiles();
     loadConditions();
     loadIcons();
-    loadSettings();
   }, []);
 
   return (
@@ -223,7 +223,7 @@ export default function PageConfig() {
       </Paper>
 
       {/* ---- Settings ---- */}
-      <TabPanel value={tab} index={6}>
+      <TabPanel value={tab} index={0}>
         <form onSubmit={addSetting} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Service Name" value={settingForm.service_name}
             onChange={(e) => setSettingForm({ ...settingForm, service_name: e.target.value })} />
@@ -231,6 +231,8 @@ export default function PageConfig() {
             onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })} />
           <TextField label="Value" value={settingForm.value}
             onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })} />
+          <TextField label="Value Type" value={settingForm.value_type}
+            onChange={(e) => setSettingForm({ ...settingForm, value_type: e.target.value })} />
           <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
         </form>
 
@@ -268,7 +270,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Timeframes ---- */}
-      <TabPanel value={tab} index={0}>
+      <TabPanel value={tab} index={1}>
         <form onSubmit={addTimeframe} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Code" value={tfForm.code} onChange={(e) => setTfForm({ ...tfForm, code: e.target.value })} />
           <TextField label="History Limit" value={tfForm.history_limit} onChange={(e) => setTfForm({ ...tfForm, history_limit: e.target.value })} />
@@ -315,7 +317,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Commands ---- */}
-      <TabPanel value={tab} index={1}>
+      <TabPanel value={tab} index={2}>
         <form onSubmit={addCommand} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Command" value={cmdForm.command} onChange={(e) => setCmdForm({ ...cmdForm, command: e.target.value })} />
           <TextField label="Group" value={cmdForm.group_name} onChange={(e) => setCmdForm({ ...cmdForm, group_name: e.target.value })} />
@@ -356,7 +358,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Reasons ---- */}
-      <TabPanel value={tab} index={2}>
+      <TabPanel value={tab} index={3}>
         <form onSubmit={addReason} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Code" value={reasonForm.code} onChange={(e) => setReasonForm({ ...reasonForm, code: e.target.value })} />
           <TextField label="Description" value={reasonForm.description} onChange={(e) => setReasonForm({ ...reasonForm, description: e.target.value })} />
@@ -393,7 +395,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Trade Profiles ---- */}
-      <TabPanel value={tab} index={3}>
+      <TabPanel value={tab} index={4}>
         <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
           <TextField label="Description" value={profileForm.description} onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
@@ -429,7 +431,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Trade Conditions ---- */}
-      <TabPanel value={tab} index={4}>
+      <TabPanel value={tab} index={5}>
         <form onSubmit={addCondition} style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
           <TextField label="Profile ID" value={conditionForm.profile_id} onChange={(e) => setConditionForm({ ...conditionForm, profile_id: e.target.value })} />
           <TextField label="Action" value={conditionForm.action} onChange={(e) => setConditionForm({ ...conditionForm, action: e.target.value })} />
@@ -483,7 +485,7 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Group Icons ---- */}
-      <TabPanel value={tab} index={5}>
+      <TabPanel value={tab} index={6}>
         <form onSubmit={addIcon} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <TextField label="Group Name" value={iconForm.group_name} onChange={(e) => setIconForm({ ...iconForm, group_name: e.target.value })} />
           <TextField label="Icon" value={iconForm.icon} onChange={(e) => setIconForm({ ...iconForm, icon: e.target.value })} />

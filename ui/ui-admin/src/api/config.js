@@ -1,22 +1,22 @@
 import apiClient from "./apiClient";
 
 // ================== CONFIG PARAMETERS ==================
-export const getConfigs = async () => {
+export const getSettings = async () => {
   const res = await apiClient.get("/config/settings/");
   return res.data;
 };
 
-export const createConfig = async (item) => {
+export const createSetting = async (item) => {
   const res = await apiClient.post("/config/settings/", item);
   return res.data;
 };
 
-export const updateConfig = async (code, item) => {
+export const updateSetting = async (code, item) => {
   const res = await apiClient.put(`/config/settings/${code}`, item);
   return res.data;
 };
 
-export const deleteConfig = async (code) => {
+export const deleteSetting = async (code) => {
   const res = await apiClient.delete(`/config/settings/${code}`);
   return res.data;
 };
