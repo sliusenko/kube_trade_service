@@ -46,7 +46,7 @@ export default function PageConfig() {
   });
 
   async function loadSettings() {
-    setSettings(await getSettings("core-admin"));
+    setSettings(await getSettings());
   }
 
   async function addSetting(e) {
@@ -95,11 +95,21 @@ export default function PageConfig() {
     e.preventDefault();
     const payload = {
       code: tfForm.code,
-      history_limit: parseInt(tfForm.history_limit, 10),
-      min_len: parseInt(tfForm.min_len, 10),
-      hours: parseFloat(tfForm.hours),
-      lookback: tfForm.lookback   // напр. "PT12H", "P1D"
+      history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
+      min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
+      hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
+      lookback: tfForm.lookback || null
     };
+
+    try {
+      await createTimeframe(payload);
+      setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
+      loadTimeframes();
+    } catch (err) {
+      console.error("❌ Помилка при створенні timeframe:", err);
+      alert("Не вдалося додати timeframe. Перевір чи немає дубля по code.");
+    }
+  }
 
     await createTimeframe(payload);
     setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
@@ -222,7 +232,17 @@ export default function PageConfig() {
   });
 
   async function loadProfiles() {
-    setProfiles(await getTradeProfiles());
+    const data = await getTradeProfiles();
+    // перетворення camelCase → snake_case
+    setProfiles(
+      data.map((p) => ({
+        id: p.id,
+        user_id: p.user_id || p.userId,
+        exchange_id: p.exchange_id || p.exchangeId,
+        name: p.name,
+        description: p.description
+      }))
+    );
   }
 
   async function addProfile(e) {
@@ -256,7 +276,6 @@ export default function PageConfig() {
       loadProfiles();
     }
   }
-
 
   // ---- Trade Conditions ----
   const [conditions, setConditions] = useState([]);
@@ -586,14 +605,18 @@ export default function PageConfig() {
       </TabPanel>
 
       {/* ---- Trade Profiles ---- */}
-      <TabPanel value={tab} index={4}>
-        <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <TextField label="UserID" value={profileForm.user_id} onChange={(e) => setProfileForm({ ...profileForm, user_id: e.target.value })} />
-          <TextField label="ExchangeID" value={profileForm.exchange_id} onChange={(e) => setProfileForm({ ...profileForm, exchange_id: e.target.value })} />
-          <TextField label="Name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
-          <TextField label="Description" value={profileForm.description} onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
-          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
-        </form>
+<TabPanel value={tab} index={4}>
+  <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+    <TextField label="UserID" value={profileForm.user_id}
+      onChange={(e) => setProfileForm({ ...profileForm, user_id: e.target.value })} />
+    <TextField label="ExchangeID" value={profileForm.exchange_id}
+      onChange={(e) => setProfileForm({ ...profileForm, exchange_id: e.target.value })} />
+    <TextField label="Name" value={profileForm.name}
+      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
+    <TextField label="Description" value={profileForm.description}
+      onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
+    <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
+  </form>
         <Table size="small">
           <TableHead>
             <TableRow>
