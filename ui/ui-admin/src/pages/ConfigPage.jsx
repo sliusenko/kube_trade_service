@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import {parseLookback, formatLookback} from "../pages/utils";
 import {
   Tabs,
   Tab,
@@ -87,7 +88,7 @@ export default function PageConfig() {
       history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
       min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
-      lookback: tfForm.lookback || null
+      lookback: parseLookback(tfForm.lookback) // 👈 тут конвертація
     };
     await createTimeframe(payload);
     setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
@@ -99,7 +100,7 @@ export default function PageConfig() {
       history_limit: parseInt(tf.history_limit, 10),
       min_len: parseInt(tf.min_len, 10),
       hours: parseFloat(tf.hours),
-      lookback: tf.lookback
+      lookback: parseLookback(tf.lookback)
     };
     await updateTimeframe(tf.code, payload);
     loadTimeframes();

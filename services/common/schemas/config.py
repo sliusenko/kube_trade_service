@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from uuid import UUID
-from pydantic import BaseModel, condecimal
+from pydantic import BaseModel, condecimal, field_validator
 from decimal import Decimal
 
 # -------- Settings --------
@@ -57,26 +57,50 @@ class GroupIconRead(BaseModel):
         from_attributes = True
 
 # -------- Timeframes --------
+# -------- Timeframes --------
 class TimeframeCreate(BaseModel):
     code: str
     history_limit: Optional[int]
     min_len: Optional[int]
     hours: Optional[Decimal]
-    lookback: Optional[timedelta]
+    lookback: Optional[int]
+
+    @field_validator("lookback", mode="before")
+    def convert_seconds_to_timedelta(cls, v):
+        if v is None:
+            return None
+        return timedelta(seconds=int(v))
 class TimeframeUpdate(BaseModel):
     history_limit: Optional[int] = None
     min_len: Optional[int] = None
     hours: Optional[Decimal] = None
-    lookback: Optional[timedelta] = None
+    lookback: Optional[int] = None
+
+    @field_validator("lookback", mode="before")
+    def convert_seconds_to_timedelta(cls, v):
+        if v is None:
+            return None
+        return timedelta(seconds=int(v))
 class TimeframeRead(BaseModel):
     code: str
     history_limit: int
     min_len: int
     hours: Decimal
-    lookback: Optional[timedelta]
+    lookback: Optional[int]
+
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            code=obj.code,
+            history_limit=obj.history_limit,
+            min_len=obj.min_len,
+            hours=obj.hours,
+            lookback=int(obj.lookback.total_seconds()) if obj.lookback else None
+        )
 
     class Config:
         from_attributes = True
+        orm_mode = True
 
 # -------- Reasons --------
 class ReasonCodeCreate(BaseModel):

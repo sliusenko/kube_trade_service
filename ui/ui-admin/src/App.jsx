@@ -8,7 +8,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const ExchangesPage = lazy(() => import("./pages/ExchangesPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
-const PageConfig = lazy(() => import("./pages/PageConfig"));
+const PageConfig = lazy(() => import("./pages/ConfigPage"));
 
 const Page = ({ title, children }) => (
   <div className="p-6">
@@ -74,7 +74,7 @@ export default function App() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/exchanges" element={<ExchangesPage />} />
-              <Route path="/config" element={<PageConfig />} />
+              <Route path="/config" element={<ConfigPage />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="*" element={<Page title="404">Сторінку не знайдено.</Page>} />
             </Routes>
