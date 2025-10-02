@@ -60,7 +60,7 @@ class GroupIconRead(BaseModel):
 # -------- Timeframes --------
 class TimeframeBase(BaseModel):
     code: str
-    lookback: int | None = None   # секундами
+    lookback: int | None = None
     history_limit: int | None = None
     min_len: int | None = None
     hours: float | None = None
