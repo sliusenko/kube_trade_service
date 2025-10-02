@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {parseLookback, formatLookback} from "../pages/utils";
+import { parseLookback, formatLookback } from "../pages/utils";
 import {
   Tabs,
   Tab,
