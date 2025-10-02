@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, Interval, TIMESTAMP, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -57,5 +57,10 @@ class TradeCondition(Base):
     priority = Column(Integer, nullable=False)
 
     profile = relationship("TradeProfile", back_populates="conditions")
+
+    __table_args__ = (
+        UniqueConstraint("profile_id", "action", "condition_type", "priority",
+                         name="uq_trade_condition"),
+    )
 
 TradeProfile.conditions = relationship("TradeCondition", back_populates="profile")
