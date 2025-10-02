@@ -17,40 +17,15 @@ from common.deps.config import CoreNewsSettings
 settings = CoreNewsSettings()
 
 log = logging.getLogger(__name__)
+analyzer = SentimentIntensityAnalyzer()
 
 # === NewsAPI config ===
-NEWS_ENDPOINT = "https://newsapi.org/v2/everything"
-NEWS_PARAMS = {
-    "q": "bitcoin OR ethereum OR binance OR sec OR hack",
-    "language": "en",
-    "sortBy": "publishedAt",
-    "pageSize": 10,
-}
-
-analyzer = SentimentIntensityAnalyzer()
-BLACKLIST_SOURCES = {"reddit.com"}
-
-# 🔑 Ключове слово → торговий символ (для прив’язки новини до symbol_id)
-KEYWORD_TO_SYMBOL = {
-    "bitcoin": "BTCUSDT",
-    "Bitcoin": "BTCUSDT",
-    "Solana": "SOLUSDT",
-    "Ethereum": "ETHUSDT",
-    "Cardano": "ADAUSDT",
-    "btc": "BTCUSDT",
-    "XRP": "XRPUSDT",
-    "CELRUSDT": "CELRUSDT",
-    "ethereum": "ETHUSDT",
-    "eth": "ETHUSDT",
-    "binance": "BNBUSDT",
-    "bnb": "BNBUSDT",
-    "sec": "BTCUSDT",
-    "hack": None,
-}
-
-# Параметри оркестрації
-DEFAULT_HALT_THRESHOLD = -0.80   # якщо не задано у settings/env
-DEFAULT_LOOKBACK_HOURS = 6       # вікно для агрегату з БД
+NEWS_ENDPOINT = settings.NEWS_ENDPOINT
+NEWS_PARAMS = settings.NEWS_PARAMS
+BLACKLIST_SOURCES = settings.BLACKLIST_SOURCES
+KEYWORD_TO_SYMBOL = settings.KEYWORD_TO_SYMBOL
+DEFAULT_HALT_THRESHOLD = settings.DEFAULT_HALT_THRESHOLD
+DEFAULT_LOOKBACK_HOURS = settings.DEFAULT_LOOKBACK_HOURS
 
 def _parse_ts(ts_str: str) -> Optional[datetime]:
     if not ts_str:
