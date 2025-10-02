@@ -224,16 +224,46 @@ export default function PageConfig() {
 
       {/* ---- Settings ---- */}
       <TabPanel value={tab} index={0}>
-        <form onSubmit={addSetting} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <TextField label="Service Name" value={settingForm.service_name}
-            onChange={(e) => setSettingForm({ ...settingForm, service_name: e.target.value })} />
-          <TextField label="Key" value={settingForm.key}
-            onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })} />
-          <TextField label="Value" value={settingForm.value}
-            onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })} />
-          <TextField label="Value Type" value={settingForm.value_type}
-            onChange={(e) => setSettingForm({ ...settingForm, value_type: e.target.value })} />
-          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
+
+        <form
+          onSubmit={addSetting}
+          style={{ display: "flex", gap: 8, marginBottom: 12 }}
+        >
+          <TextField
+            label="Service Name"
+            value={settingForm.service_name}
+            onChange={(e) =>
+              setSettingForm({ ...settingForm, service_name: e.target.value })
+            }
+          />
+          <TextField
+            label="Key"
+            value={settingForm.key}
+            onChange={(e) => setSettingForm({ ...settingForm, key: e.target.value })}
+          />
+          <TextField
+            label="Value"
+            value={settingForm.value}
+            onChange={(e) => setSettingForm({ ...settingForm, value: e.target.value })}
+          />
+          <FormControl>
+            <InputLabel>Value Type</InputLabel>
+            <Select
+              value={settingForm.value_type}
+              onChange={(e) =>
+                setSettingForm({ ...settingForm, value_type: e.target.value })
+              }
+              style={{ minWidth: 120 }}
+            >
+              <MenuItem value="str">text (str)</MenuItem>
+              <MenuItem value="json">json</MenuItem>
+              <MenuItem value="float">float</MenuItem>
+              <MenuItem value="int">int</MenuItem>
+            </Select>
+          </FormControl>
+          <Button type="submit" variant="contained" startIcon={<Add />}>
+            Додати
+          </Button>
         </form>
 
         <Table size="small">
@@ -397,6 +427,8 @@ export default function PageConfig() {
       {/* ---- Trade Profiles ---- */}
       <TabPanel value={tab} index={4}>
         <form onSubmit={addProfile} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <TextField label="UserID" value={profileForm.user_id} onChange={(e) => setProfileForm({ ...profileForm, user_id: e.target.value })} />
+          <TextField label="ExchangeID" value={profileForm.exchange_id} onChange={(e) => setProfileForm({ ...profileForm, exchange_id: e.target.value })} />
           <TextField label="Name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
           <TextField label="Description" value={profileForm.description} onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })} />
           <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
@@ -405,6 +437,8 @@ export default function PageConfig() {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
+              <TableCell>UserID</TableCell>
+              <TableCell>ExchangeID</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Description</TableCell>
               <TableCell align="right">Actions</TableCell>
