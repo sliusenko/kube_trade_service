@@ -8,11 +8,9 @@ class SettingCreate(BaseModel):
     key: str
     value: str
     value_type: str = "str"
-
 class SettingUpdate(BaseModel):
     value: str
     value_type: str = "str"
-
 class SettingRead(BaseModel):
     id: UUID
     service_name: str
@@ -24,7 +22,6 @@ class SettingRead(BaseModel):
 
     class Config:
         from_attributes = True
-
 class CommandSchema(BaseModel):
     id: int
     command: str
@@ -33,16 +30,12 @@ class CommandSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
 class GroupIconSchema(BaseModel):
     group_name: str
     icon: str
 
     class Config:
         from_attributes = True
-
-
 class TimeframeSchema(BaseModel):
     code: str
     history_limit: Optional[int]
@@ -52,8 +45,6 @@ class TimeframeSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
 class ReasonCodeSchema(BaseModel):
     code: str
     description: str
@@ -61,8 +52,6 @@ class ReasonCodeSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
 class TradeProfileSchema(BaseModel):
     id: int
     name: str
@@ -70,8 +59,6 @@ class TradeProfileSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
 class TradeConditionSchema(BaseModel):
     id: int
     profile_id: int

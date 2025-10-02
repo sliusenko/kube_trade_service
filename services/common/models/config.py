@@ -19,21 +19,16 @@ class Setting(Base):
         # Забороняємо дублікати ключів у межах сервісу
         {"sqlite_autoincrement": True},
     )
-
 class Command(Base):
     __tablename__ = "commands"
     id = Column(Integer, primary_key=True, index=True)
     command = Column(String, unique=True, nullable=False)
     group_name = Column(String, nullable=False)
     description = Column(Text)
-
-
 class GroupIcon(Base):
     __tablename__ = "group_icons"
     group_name = Column(String, primary_key=True)
     icon = Column(String, nullable=False)
-
-
 class Timeframe(Base):
     __tablename__ = "timeframes"
     code = Column(String, primary_key=True)  # "1m", "15m", "1h"
@@ -41,22 +36,16 @@ class Timeframe(Base):
     min_len = Column(Integer)
     hours = Column(Numeric)
     lookback = Column(Interval)
-
-
 class ReasonCode(Base):
     __tablename__ = "reason_codes"
     code = Column(String, primary_key=True)
     description = Column(Text, nullable=False)
     category = Column(String, nullable=False)  # BUY / SELL / FILTER / MANUAL
-
-
 class TradeProfile(Base):
     __tablename__ = "trade_profiles"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
     description = Column(Text)
-
-
 class TradeCondition(Base):
     __tablename__ = "trade_conditions"
     id = Column(Integer, primary_key=True, index=True)
@@ -68,6 +57,5 @@ class TradeCondition(Base):
     priority = Column(Integer, nullable=False)
 
     profile = relationship("TradeProfile", back_populates="conditions")
-
 
 TradeProfile.conditions = relationship("TradeCondition", back_populates="profile")
