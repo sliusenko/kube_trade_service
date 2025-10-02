@@ -114,22 +114,22 @@ class TradeConditionCreate(BaseModel):
     profile_id: int                # FK -> trade_profiles.id
     action: str                    # varchar
     condition_type: str            # varchar
-    param_1: Optional[Decimal] = None  # numeric
-    param_2: Optional[Decimal] = None  # numeric
+    param_1: Optional[float] = None  # numeric → float
+    param_2: Optional[float] = None  # numeric → float
     priority: int                  # integer
 class TradeConditionUpdate(BaseModel):
     action: Optional[str] = None
     condition_type: Optional[str] = None
-    param_1: Optional[Decimal] = None
-    param_2: Optional[Decimal] = None
+    param_1: Optional[float] = None
+    param_2: Optional[float] = None
     priority: Optional[int] = None
 class TradeConditionRead(BaseModel):
     id: int
     profile_id: int
     action: str
     condition_type: str
-    param_1: Optional[Decimal]
-    param_2: Optional[Decimal]
+    param_1: Optional[float]
+    param_2: Optional[float]
     priority: int
 
     class Config:
