@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 import uuid
@@ -11,7 +12,11 @@ from common.deps.session import SessionLocal
 from common.models.exchanges import Exchange, ExchangeSymbol
 from common.models import ExchangeStatusHistory
 from common.deps.clients import get_exchange_client
-from common.deps.config import settings
+from common.utils.config_resolver import ConfigResolver
+from common.deps.config import CoreFetchSettings
+settings = CoreFetchSettings()
+SERVICE_NAME = os.getenv("SERVICE_NAME", "core-fetch")
+resolver = ConfigResolver(SERVICE_NAME, settings.dict(), extra_service_names=[f"kube-trade-bot-{SERVICE_NAME}"])
 
 log = logging.getLogger(__name__)
 
@@ -108,10 +113,11 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 id=f"fees_{ex.code}_{ex.id}",
                 replace_existing=True,
             )
+            fetch_interval = await resolver.get_int(session, "FETCH_NEWS_INTERVAL_MIN") or settings.FETCH_NEWS_INTERVAL_MIN
             scheduler.add_job(
                 fetch_and_store_exchange_prices,
                 "interval",
-                minutes=int(settings.FETCH_PRICE_INTERVAL_MIN),
+                minutes=int(fetch_interval),
                 args=[ex.code, ex.id],
                 id=f"prices_{ex.code}_{ex.id}",
                 replace_existing=True,
@@ -121,7 +127,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
 
         log.info(
             f"🕑 Added {len(exchanges)} grouped price jobs "
-            f"(every {settings.FETCH_PRICE_INTERVAL_MIN}m)"
+            f"(every {fetch_interval}m)"
         )
 
     log.info("✅ Jobs loaded")

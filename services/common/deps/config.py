@@ -100,6 +100,6 @@ class CoreAdminSettings(BaseSettings):
 class CoreBoardSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
 class CoreFetchSettings(BaseSettings):
-    FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
+    FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN") or "10")
 class CoreConfigSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
