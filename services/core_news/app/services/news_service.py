@@ -72,7 +72,16 @@ def detect_symbol_from_news(title: str, summary: str) -> str | None:
     return None
 
 async def get_symbol_id_by_code(session: AsyncSession, symbol_code: str) -> str | None:
-    q = select(ExchangeSymbol.id).where(ExchangeSymbol.symbol == symbol_code).limit(1)
+    base, _, quote = symbol_code.partition("/")
+    if not quote:
+        q = (
+            select(ExchangeSymbol.id)
+            .where(ExchangeSymbol.symbol.like(f"{base}/USDT"))
+            .limit(1)
+        )
+    else:
+        q = select(ExchangeSymbol.id).where(ExchangeSymbol.symbol == symbol_code).limit(1)
+
     res = await session.execute(q)
     return res.scalar_one_or_none()
 

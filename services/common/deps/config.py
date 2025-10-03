@@ -39,17 +39,17 @@ class CoreNewsSettings(BaseSettings):
     # === Mapping keywords to symbols ===
     KEYWORD_TO_SYMBOL: Dict = json.loads(os.getenv("KEYWORD_TO_SYMBOL", """
     {
-        "bitcoin": "BTC/USDT",
-        "btc": "BTC/USDT",
-        "solana": "SOL/USDT",
-        "ethereum": "ETH/USDT",
-        "eth": "ETH/USDT",
-        "cardano": "ADA/USDT",
-        "xrp": "XRP/USDT",
-        "celrusdt": "CELR/USDT",
-        "binance": "BNB/USDT",
-        "bnb": "BNB/USDT",
-        "sec": "BTC/USDT",
+        "bitcoin": "BTC",
+        "btc": "BTC",
+        "solana": "SOL",
+        "ethereum": "ETH",
+        "eth": "ETH",
+        "cardano": "ADA",
+        "xrp": "XRP",
+        "celrusdt": "CELR",
+        "binance": "BNB",
+        "bnb": "BNB",
+        "sec": "BTC",
         "hack": null
     }
     """))
