@@ -18,7 +18,8 @@ from common.utils.config_resolver import ConfigResolver
 
 # === дефолти з BaseSettings ===
 settings = CoreNewsSettings()
-resolver = ConfigResolver("core-news", settings.dict())
+SERVICE_NAME = os.getenv("SERVICE_NAME", "core-news")
+resolver = ConfigResolver(SERVICE_NAME, settings.dict(), extra_service_names=[f"kube-trade-bot-{SERVICE_NAME}"])
 
 log = logging.getLogger(__name__)
 analyzer = SentimentIntensityAnalyzer()
