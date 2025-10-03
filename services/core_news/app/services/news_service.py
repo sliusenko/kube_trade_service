@@ -72,7 +72,7 @@ def detect_symbol_from_news(title: str, summary: str) -> str | None:
     return None
 
 async def get_symbol_id_by_code(session: AsyncSession, symbol_code: str) -> str | None:
-    q = select(ExchangeSymbol.id).where(ExchangeSymbol.symbol == symbol_code)
+    q = select(ExchangeSymbol.id).where(ExchangeSymbol.symbol == symbol_code).limit(1)
     res = await session.execute(q)
     return res.scalar_one_or_none()
 
