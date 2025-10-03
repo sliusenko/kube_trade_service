@@ -113,7 +113,7 @@ async def load_jobs(scheduler: AsyncIOScheduler):
                 id=f"fees_{ex.code}_{ex.id}",
                 replace_existing=True,
             )
-            fetch_interval = await resolver.get_int(session, "FETCH_NEWS_INTERVAL_MIN") or settings.FETCH_NEWS_INTERVAL_MIN
+            fetch_interval = await resolver.get_int(session, "FETCH_PRICE_INTERVAL_MIN") or settings.FETCH_PRICE_INTERVAL_MIN
             scheduler.add_job(
                 fetch_and_store_exchange_prices,
                 "interval",
