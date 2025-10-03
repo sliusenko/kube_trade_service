@@ -90,7 +90,7 @@ class ExchangeCredentialBase(BaseModel):
     api_secret: Optional[str] = None
     api_passphrase: Optional[str] = None
     subaccount: Optional[str] = None
-    scopes: Optional[dict] = None
+    scopes: Optional[List[str]] = None
     secret_ref: Optional[str] = None
     vault_path: Optional[str] = None
     valid_from: Optional[datetime] = None
@@ -111,6 +111,7 @@ class ExchangeCredentialOut(ExchangeCredentialBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    exchange_id: UUID
     created_at: datetime
 
 # -----------------------------
