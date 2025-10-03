@@ -16,19 +16,24 @@ class BaseSettings:
         )
 
     def dict(self) -> dict:
-        return self.__dict__
+        data = {}
+        for name in dir(self.__class__):
+            if name.isupper():
+                data[name] = getattr(self, name)
+        for name, val in self.__dict__.items():
+            if name.isupper():
+                data[name] = val
+        return data
+
 settings = BaseSettings()
 
 class CoreNewsSettings(BaseSettings):
-    # === API ===
     NEWSAPI_KEY: Optional[str] = os.getenv("NEWSAPI_KEY")
     NEWS_ENDPOINT: str = os.getenv("NEWS_ENDPOINT", "https://newsapi.org/v2/everything")
 
-    # === Schedulers ===
     UPDATE_NEWS_PRICES_INTERVAL_HOURS: int = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS") or "4")
     FETCH_NEWS_INTERVAL_MIN: int = int(os.getenv("FETCH_NEWS_INTERVAL_MIN") or "15")
 
-    # === Query params ===
     NEWS_PARAMS: Dict = json.loads(os.getenv("NEWS_PARAMS", """
     {
         "q": "bitcoin OR ethereum OR binance OR sec OR hack",
@@ -39,7 +44,6 @@ class CoreNewsSettings(BaseSettings):
     """))
     NEWS_QUERY: str = os.getenv("NEWS_QUERY", "bitcoin OR ethereum OR binance OR sec OR hack")
 
-    # === Mapping keywords to symbols ===
     KEYWORD_TO_SYMBOL: Dict = json.loads(os.getenv("KEYWORD_TO_SYMBOL", """
     {
         "bitcoin": "BTC",
@@ -57,8 +61,7 @@ class CoreNewsSettings(BaseSettings):
     }
     """))
 
-    # === Sentiment / Sources ===
-    DEFAULT_HALT_THRESHOLD: float = float(os.getenv("DEFAULT_HALT_THRESHOLD", "-0.8"))
+    DEFAULT_HALT_THRESHOLD: float = float(os.getenv("DEFAULT_HALT_THRESHOLD") or "-0.8")
 
     WHITELIST_SOURCES: Set[str] = set(json.loads(os.getenv("WHITELIST_SOURCES", """
     ["CoinDesk", "Cointelegraph", "Decrypt", "Bloomberg"]
