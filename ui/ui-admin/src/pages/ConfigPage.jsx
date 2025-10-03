@@ -316,27 +316,78 @@ export default function PageConfig() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
               <TableCell>Service</TableCell>
               <TableCell>Key</TableCell>
               <TableCell>Value</TableCell>
+              <TableCell>Value Type</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {settings.map((s) => (
               <TableRow key={s.id}>
-                <TableCell>{s.id}</TableCell>
                 <TableCell>{s.service_name}</TableCell>
                 <TableCell>
-                  <TextField value={s.key || ""} size="small" onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, key: e.target.value } : x))} />
+                  <TextField
+                    value={s.key || ""}
+                    size="small"
+                    onChange={(e) =>
+                      setSettings((prev) =>
+                        prev.map((x) =>
+                          x.id === s.id ? { ...x, key: e.target.value } : x
+                        )
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField value={s.value || ""} size="small" onChange={(e) => setSettings(prev => prev.map(x => x.id === s.id ? { ...x, value: e.target.value } : x))} />
+                  <TextField
+                    value={s.value || ""}
+                    size="small"
+                    onChange={(e) =>
+                      setSettings((prev) =>
+                        prev.map((x) =>
+                          x.id === s.id ? { ...x, value: e.target.value } : x
+                        )
+                      )
+                    }
+                  />
+                </TableCell>
+                <TableCell>
+                  <FormControl size="small" fullWidth>
+                    <Select
+                      value={s.value_type || "str"}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev.map((x) =>
+                            x.id === s.id ? { ...x, value_type: e.target.value } : x
+                          )
+                        )
+                      }
+                    >
+                      <MenuItem value="str">str</MenuItem>
+                      <MenuItem value="int">int</MenuItem>
+                      <MenuItem value="float">float</MenuItem>
+                      <MenuItem value="json">json</MenuItem>
+                    </Select>
+                  </FormControl>
                 </TableCell>
                 <TableCell align="right">
-                  <Button size="small" variant="contained" onClick={() => saveSetting(s)}>Зберегти</Button>
-                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeSetting(s.id)}>Видалити</Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => saveSetting(s)}
+                  >
+                    Зберегти
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<Delete />}
+                    onClick={() => removeSetting(s.id)}
+                  >
+                    Видалити
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
