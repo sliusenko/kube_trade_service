@@ -147,6 +147,16 @@ async def save_news_to_db(news_items: List[dict], session: AsyncSession) -> None
         text = f"{news['title']} {news.get('summary', '')}"
         score = analyzer.polarity_scores(text)
 
+        # 🟢 резолвимо символ
+        symbol_code = detect_symbol_from_news(news["title"], news.get("summary", ""),
+                                              await resolver.get_dict(session, "KEYWORD_TO_SYMBOL") or settings.KEYWORD_TO_SYMBOL)
+        symbol_id = None
+        if symbol_code:
+            symbol_id = await get_symbol_id_by_code(session, symbol_code)
+            log.info("🔎 News '%s' → matched symbol=%s, id=%s", news["title"], symbol_code, symbol_id)
+        else:
+            log.warning("⚠️ No symbol matched for news: '%s'", news["title"])
+
         db_news = NewsSentiment(
             published_at=news["published_at"],
             title=news["title"][:500],
@@ -154,12 +164,13 @@ async def save_news_to_db(news_items: List[dict], session: AsyncSession) -> None
             sentiment=score["compound"],
             source=news.get("source", "newsapi"),
             url=news.get("url", ""),
+            symbol_id=symbol_id,
         )
         session.add(db_news)
         inserted_count += 1
 
     await session.commit()
-    log.info("✅ Inserted %s news into DB", inserted_count)
+    log.info("✅ Inserted %s news into DB (with symbols)", inserted_count)
 
 async def _get_price_at(session: AsyncSession, symbol_id: uuid.UUID, target_ts: datetime, before: bool = False) -> Optional[float]:
     """Отримати найближчу ціну до часу target_ts."""
