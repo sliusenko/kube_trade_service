@@ -69,6 +69,8 @@ async def job_check_news(session: AsyncSession):
         log.warning("🚨 Negative average sentiment (%.3f <= %.2f) → HALT trading (TODO: persist/notify)", avg_sent, threshold)
     else:
         log.info("✅ Sentiment above threshold, trading stays enabled")
+    test_val = await resolver.get(session, "NEWS_ENDPOINT")
+    log.info("🔎 NEWS_ENDPOINT resolved = %s", test_val)
 # ==============================
 # HELPERS
 # ==============================

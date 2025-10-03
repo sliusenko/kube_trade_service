@@ -93,6 +93,8 @@ class CoreAdminSettings(BaseSettings):
     DASHBOARD_BASE_URL: str = os.getenv("DASHBOARD_BASE_URL", "http://kube-trade-bot-core-board:8000")
     NEWS_BASE_URL: str = os.getenv("NEWS_BASE_URL", "http://kube-trade-bot-core-news:8000")
     CONFIG_BASE_URL: str = os.getenv("CONFIG_BASE_URL", "http://kube-trade-bot-core-config:8000")
+    FETCH_NEWS_INTERVAL_MIN: int = int(os.getenv("FETCH_NEWS_INTERVAL_MIN", "15"))
+    UPDATE_NEWS_PRICES_INTERVAL_HOURS: int = int(os.getenv("UPDATE_NEWS_PRICES_INTERVAL_HOURS", "4"))
 class CoreBoardSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
 class CoreFetchSettings(BaseSettings):

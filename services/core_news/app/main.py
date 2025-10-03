@@ -7,6 +7,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from common.deps.db import AsyncSessionLocal
 from core_news.app.routers import news
 from core_news.app.services.news_service import job_check_news
+from common.utils.config_resolver import ConfigResolver
+from common.deps.config import CoreNewsSettings
+settings = CoreNewsSettings()
+resolver = ConfigResolver("core-news", settings.dict())
 
 log = logging.getLogger(__name__)
 app = FastAPI(title="core-news")
@@ -27,9 +31,13 @@ async def job_check_news_wrapper():
 
 @app.on_event("startup")
 async def startup_event():
-    scheduler.add_job(job_check_news_wrapper, "interval", minutes=10, id="check_news_interval")
+    async with AsyncSessionLocal() as session:
+        interval_min = await resolver.get_int(session, "FETCH_NEWS_INTERVAL_MIN") or settings.FETCH_NEWS_INTERVAL_MIN
+
+    scheduler.add_job(job_check_news_wrapper, "interval", minutes=interval_min, id="check_news_interval")
     scheduler.start()
-    log.info("🗓️ APScheduler started (job_check_news every 10 minutes)")
+    log.info("🗓️ APScheduler started (job_check_news every %s minutes)", interval_min)
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
