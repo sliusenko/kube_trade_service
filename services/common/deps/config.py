@@ -15,6 +15,8 @@ class BaseSettings:
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
+    def dict(self) -> dict:
+        return self.__dict__
 settings = BaseSettings()
 
 class CoreNewsSettings(BaseSettings):
@@ -84,7 +86,6 @@ class CoreNewsSettings(BaseSettings):
         "default": 0.5
     }
     """))
-
 class CoreAdminSettings(BaseSettings):
     ADMIN_DEFAULT_USER: str = os.getenv("ADMIN_DEFAULT_USER", "admin")
     ADMIN_DEFAULT_PASSWORD: str = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin")
@@ -92,13 +93,9 @@ class CoreAdminSettings(BaseSettings):
     DASHBOARD_BASE_URL: str = os.getenv("DASHBOARD_BASE_URL", "http://kube-trade-bot-core-board:8000")
     NEWS_BASE_URL: str = os.getenv("NEWS_BASE_URL", "http://kube-trade-bot-core-news:8000")
     CONFIG_BASE_URL: str = os.getenv("CONFIG_BASE_URL", "http://kube-trade-bot-core-config:8000")
-
-
 class CoreBoardSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
-
 class CoreFetchSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))
-
 class CoreConfigSettings(BaseSettings):
     FETCH_PRICE_INTERVAL_MIN: int = int(os.getenv("FETCH_PRICE_INTERVAL_MIN", "10"))

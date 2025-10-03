@@ -28,7 +28,6 @@ async def job_check_news():
 
 @app.on_event("startup")
 async def startup_event():
-    # інтервал можна конфігурити через env/values, тут 10 хв як у тебе в логах
     scheduler.add_job(job_check_news, "interval", minutes=10, id="check_news_interval")
     scheduler.start()
     log.info("🗓️ APScheduler started (check_news every 10 minutes)")

@@ -14,26 +14,70 @@ import datetime as dt
 from common.models.markethistory import NewsSentiment, PriceHistory
 from common.models.exchanges import ExchangeSymbol
 from common.deps.config import CoreNewsSettings
+from common.utils.config_resolver import ConfigResolver
 
+# === дефолти з BaseSettings ===
 settings = CoreNewsSettings()
+resolver = ConfigResolver("core-news", settings.dict())
 
 log = logging.getLogger(__name__)
 analyzer = SentimentIntensityAnalyzer()
 
-# === NewsAPI config ===
-NEWS_ENDPOINT = settings.NEWS_ENDPOINT
-NEWS_PARAMS = settings.NEWS_PARAMS
-BLACKLIST_SOURCES = settings.BLACKLIST_SOURCES
-KEYWORD_TO_SYMBOL = settings.KEYWORD_TO_SYMBOL
-DEFAULT_HALT_THRESHOLD = settings.DEFAULT_HALT_THRESHOLD
-UPDATE_NEWS_PRICES_INTERVAL_HOURS = settings.UPDATE_NEWS_PRICES_INTERVAL_HOURS
+# ==============================
+# JOB CONFIG
+# ==============================
+async def job_check_news(session: AsyncSession):
+    NEWS_ENDPOINT = await resolver.get(session, "NEWS_ENDPOINT")
+    NEWS_PARAMS = await resolver.get_dict(session, "NEWS_PARAMS") or settings.NEWS_PARAMS
+    BLACKLIST_SOURCES = await resolver.get_dict(session, "BLACKLIST_SOURCES") or settings.BLACKLIST_SOURCES
+    KEYWORD_TO_SYMBOL = await resolver.get_dict(session, "KEYWORD_TO_SYMBOL") or settings.KEYWORD_TO_SYMBOL
+    DEFAULT_HALT_THRESHOLD = await resolver.get_float(session, "DEFAULT_HALT_THRESHOLD") or settings.DEFAULT_HALT_THRESHOLD
+    UPDATE_NEWS_PRICES_INTERVAL_HOURS = await resolver.get_int(session, "UPDATE_NEWS_PRICES_INTERVAL_HOURS") or settings.UPDATE_NEWS_PRICES_INTERVAL_HOURS
 
+    log.info(
+        "📰 Config → endpoint=%s, params=%s, blacklist=%s, symbols=%s, halt=%.2f, update_h=%s",
+        NEWS_ENDPOINT, NEWS_PARAMS, BLACKLIST_SOURCES, KEYWORD_TO_SYMBOL,
+        DEFAULT_HALT_THRESHOLD, UPDATE_NEWS_PRICES_INTERVAL_HOURS
+    )
+
+    # виконуємо pipeline
+    items = await fetch_latest_news(session, NEWS_ENDPOINT, NEWS_PARAMS, BLACKLIST_SOURCES)
+    if not items:
+        log.info("ℹ️ No fresh news fetched from NewsAPI")
+    else:
+        await save_news_to_db(items, session)
+
+    try:
+        await update_news_prices(session)
+    except Exception as e:
+        log.warning("⚠️ update_news_prices failed: %s", e)
+
+    # обрахунок середнього сентименту
+    lookback_h = int(os.getenv("NEWS_LOOKBACK_HOURS", UPDATE_NEWS_PRICES_INTERVAL_HOURS))
+    avg_sent = await _avg_recent_sentiment(session, hours=lookback_h)
+
+    if avg_sent is None:
+        log.info("ℹ️ No news in the last %s hours to aggregate sentiment", lookback_h)
+        return
+
+    threshold_cfg = await resolver.get_float(session, "HALT_TRADE_NEG_SENTIMENT")
+    threshold = threshold_cfg if threshold_cfg is not None else float(os.getenv("HALT_TRADE_NEG_SENTIMENT", DEFAULT_HALT_THRESHOLD))
+
+    log.info("📰 Avg news sentiment (last %sh): %.3f; threshold: %.2f", lookback_h, avg_sent, threshold)
+
+    if avg_sent <= threshold:
+        log.warning("🚨 Negative average sentiment (%.3f <= %.2f) → HALT trading (TODO: persist/notify)", avg_sent, threshold)
+    else:
+        log.info("✅ Sentiment above threshold, trading stays enabled")
+# ==============================
+# HELPERS
+# ==============================
 def _parse_ts(ts_str: str) -> Optional[datetime]:
     if not ts_str:
         return None
     return datetime.fromisoformat(ts_str.replace("Z", "+00:00")).astimezone(timezone.utc)
 
-async def fetch_latest_news() -> List[dict]:
+async def fetch_latest_news(session: AsyncSession, NEWS_ENDPOINT: str, NEWS_PARAMS: dict, BLACKLIST_SOURCES: set) -> List[dict]:
     """Тягне батч свіжих новин із NewsAPI та нормалізує поля."""
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -63,7 +107,7 @@ async def fetch_latest_news() -> List[dict]:
         log.exception("❌ Error fetching news")
     return []
 
-def detect_symbol_from_news(title: str, summary: str) -> str | None:
+def detect_symbol_from_news(title: str, summary: str, KEYWORD_TO_SYMBOL: dict) -> str | None:
     """Визначає код символа з ключових слів у новині."""
     text = f"{title.lower()} {summary.lower()}"
     for keyword, symbol in KEYWORD_TO_SYMBOL.items():
@@ -103,19 +147,12 @@ async def save_news_to_db(news_items: List[dict], session: AsyncSession) -> None
         text = f"{news['title']} {news.get('summary', '')}"
         score = analyzer.polarity_scores(text)
 
-        # === нова логіка символів ===
-        symbol_code = detect_symbol_from_news(news["title"], news.get("summary", ""))
-        symbol_id = None
-        if symbol_code:
-            symbol_id = await get_symbol_id_by_code(session, symbol_code)
-
         db_news = NewsSentiment(
             published_at=news["published_at"],
             title=news["title"][:500],
             summary=news.get("summary", "")[:1000],
             sentiment=score["compound"],
             source=news.get("source", "newsapi"),
-            symbol_id=symbol_id,
             url=news.get("url", ""),
         )
         session.add(db_news)
@@ -176,48 +213,9 @@ async def update_news_prices(session: AsyncSession) -> None:
     await session.commit()
     log.info("✅ Updated prices for %s news items", len(results))
 
-async def _avg_recent_sentiment(session: AsyncSession, hours: int = UPDATE_NEWS_PRICES_INTERVAL_HOURS) -> Optional[float]:
+async def _avg_recent_sentiment(session: AsyncSession, hours: int) -> Optional[float]:
     """Середній compound-сентимент новин за останні N годин з NewsSentiment."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
     q = select(func.avg(NewsSentiment.sentiment)).where(NewsSentiment.published_at >= cutoff)
     res = await session.execute(q)
     return res.scalar_one_or_none()
-
-async def check_news_and_halt_trading(session: AsyncSession) -> None:
-    """
-    Оркестрація:
-      1) fetch свіжих новин
-      2) save у БД із compound-сентиментом
-      3) update цін до/після
-      4) aggregate sentiment та HALT
-    """
-    items = await fetch_latest_news()
-    if not items:
-        log.info("ℹ️ No fresh news fetched from NewsAPI")
-    else:
-        await save_news_to_db(items, session)
-
-    try:
-        await update_news_prices(session)
-    except Exception as e:
-        log.warning("⚠️ update_news_prices failed: %s", e)
-
-    lookback_h = getattr(settings, "NEWS_LOOKBACK_HOURS", None) or int(
-        os.getenv("NEWS_LOOKBACK_HOURS", UPDATE_NEWS_PRICES_INTERVAL_HOURS)
-    )
-    avg_sent = await _avg_recent_sentiment(session, hours=lookback_h)
-    if avg_sent is None:
-        log.info("ℹ️ No news in the last %s hours to aggregate sentiment", lookback_h)
-        return
-
-    threshold_cfg = getattr(settings, "HALT_TRADE_NEG_SENTIMENT", None)
-    threshold = float(threshold_cfg) if threshold_cfg is not None else float(
-        os.getenv("HALT_TRADE_NEG_SENTIMENT", DEFAULT_HALT_THRESHOLD)
-    )
-
-    log.info("📰 Avg news sentiment (last %sh): %.3f; threshold: %.2f", lookback_h, avg_sent, threshold)
-
-    if avg_sent <= threshold:
-        log.warning("🚨 Negative average sentiment (%.3f <= %.2f) → HALT trading (TODO: persist/notify)", avg_sent, threshold)
-    else:
-        log.info("✅ Sentiment above threshold, trading stays enabled")
