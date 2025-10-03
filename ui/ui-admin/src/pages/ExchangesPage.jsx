@@ -159,7 +159,8 @@ export default function ExchangesPage() {
 
   const handleCredentialClick = async (id) => {
     const full = await getExchangeCredential(selectedExchange, id);
-    setFormData(full);
+    const { label, api_key, api_secret, api_passphrase, subaccount, secret_ref, vault_path, is_service, is_active, valid_from, valid_to } = full;
+    setFormData({ label, api_key, api_secret, api_passphrase, subaccount, secret_ref, vault_path, is_service, is_active, valid_from, valid_to, id: full.id });
   };
 
   return (
