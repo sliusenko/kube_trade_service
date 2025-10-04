@@ -41,7 +41,7 @@ class Timeframe(Base):
         UniqueConstraint("exchange_id", "code", name="uq_timeframes_exchange_code"),
     )
     id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
+    code = Column(String, nullable=False)
     history_limit = Column(Integer, nullable=True)
     min_len = Column(Integer, nullable=True)
     hours = Column(Float, nullable=True)
