@@ -37,7 +37,9 @@ class GroupIcon(Base):
     icon = Column(String, nullable=False)
 class Timeframe(Base):
     __tablename__ = "timeframes"
-
+    __table_args__ = (
+        UniqueConstraint("exchange_id", "code", name="uq_timeframes_exchange_code"),
+    )
     id = Column(Integer, primary_key=True)
     code = Column(String, nullable=False, unique=True)
     history_limit = Column(Integer, nullable=True)
