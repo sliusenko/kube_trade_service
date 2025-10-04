@@ -40,10 +40,15 @@ class Timeframe(Base):
 
     id = Column(Integer, primary_key=True)
     code = Column(String, nullable=False, unique=True)
-    lookback = Column(Integer, nullable=True)  # секундами
     history_limit = Column(Integer, nullable=True)
     min_len = Column(Integer, nullable=True)
     hours = Column(Float, nullable=True)
+    exchange_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("exchanges.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    exchange: Mapped["Exchange"] = relationship("Exchange", back_populates="timeframes")
 class ReasonCode(Base):
     __tablename__ = "reason_codes"
     code = Column(String, primary_key=True)
