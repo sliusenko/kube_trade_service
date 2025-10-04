@@ -42,9 +42,11 @@ async def create_timeframe(
     if existing:
         raise HTTPException(status_code=400, detail="Timeframe already exists")
 
-    obj_data = item.dict()
-    obj_data["exchange_id"] = exchange_id
-    return await crud.create(db, obj_data)
+    item_dict = item.dict()
+    item_dict["exchange_id"] = exchange_id
+    item = TimeframeCreate(**item_dict)
+
+    return await crud.create(db, item)
 
 @router.get("/{code}", response_model=TimeframeRead)
 async def get_timeframe(code: str, db: AsyncSession = Depends(get_session)):

@@ -37,7 +37,10 @@ export const createTimeframe = async (item) => {
   };
 
   console.log("📤 Sending payload:", payload);
-  const res = await apiClient.post(`/config/timeframes/?exchange_id=${item.exchange_id}`, payload);
+  const res = await apiClient.post(
+    `/config/timeframes/?exchange_id=${item.exchange_id}`,
+    payload
+  );
   return res.data;
 };
 

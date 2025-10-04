@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Query, Body
+from uuid import UUID
 import httpx
 from common.deps.config import CoreAdminSettings
 from common.schemas.config import (
@@ -58,18 +59,20 @@ async def list_timeframes():
     return await forward_request("GET", "/timeframes/")
 
 @router.post("/timeframes/")
-async def create_timeframe(request: Request, item: TimeframeCreate):
-    query_string = request.url.query
-    path = "/timeframes/"
-    if query_string:
-        path += f"?{query_string}"
+async def create_timeframe(
+    request: Request,
+    exchange_id: UUID = Query(...),
+    item: TimeframeCreate = Body(...)
+):
+    path = f"/timeframes/?exchange_id={exchange_id}"
 
-    url = f"{BASE_URL}{path}"
-    print(f"➡️ Forwarding POST {url}")
-    print(f"📦 Payload: {item.dict()}")
+    data = item.dict()
+    data["exchange_id"] = str(exchange_id)
 
-    return await forward_request("POST", path, item.dict())
+    print(f"➡️ Forwarding POST {path}")
+    print(f"📦 Payload: {data}")
 
+    return await forward_request("POST", path, data)
 
 @router.put("/timeframes/{code}")
 async def update_timeframe(code: str, request: Request, item: TimeframeUpdate):

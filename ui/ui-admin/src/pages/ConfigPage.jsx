@@ -133,12 +133,16 @@ export default function PageConfig() {
   const filteredTimeframes = timeframes.filter(tf => tf.exchange_id === selectedExchange);
 
   useEffect(() => {
-    loadExchanges().then((data) => {
+    (async () => {
+      const data = await getExchanges();
+      console.log("🔍 Exchanges loaded:", data);
+      setExchanges(data || []);
       if (data && data.length > 0) {
-        setSelectedExchange(data[0].id);
-        loadTimeframes(data[0].id);
+        const firstEx = data[0].id;
+        setSelectedExchange(firstEx);
+        await loadTimeframes(firstEx);
       }
-    });
+    })();
   }, []);
 
   // ---- Commands ----
