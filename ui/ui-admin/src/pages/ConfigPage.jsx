@@ -28,6 +28,7 @@ import {
   getGroupIcons, createGroupIcon, updateGroupIcon, deleteGroupIcon,
   getSettings, createSetting, updateSetting, deleteSetting
 } from "../api/config";
+import { getExchanges } from "../api/exchanges";
 
 function TabPanel({ children, value, index }) {
   return (
@@ -84,15 +85,21 @@ export default function PageConfig() {
 
   async function loadExchanges() {
     const data = await getExchanges();
-    setExchanges(data);
-    if (data.length > 0 && !selectedExchange) setSelectedExchange(data[0].id);
+    console.log("🔍 Exchanges loaded:", data);
+    setExchanges(data || []);
+    if (data && data.length > 0 && !selectedExchange) {
+      setSelectedExchange(data[0].id);
+    }
   }
 
-  async function loadTimeframes() {
-    const data = await getTimeframes();
+  useEffect(() => {
+    if (selectedExchange) loadTimeframes(selectedExchange);
+  }, [selectedExchange]);
+
+  async function loadTimeframes(exchangeId) {
+    const data = await getTimeframes(exchangeId);
     setTimeframes(data);
   }
-
   async function addTimeframe(e) {
     e.preventDefault();
     const payload = {
@@ -100,13 +107,12 @@ export default function PageConfig() {
       history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
       min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
-      exchange_id: selectedExchange, // ✅ додаємо вибрану біржу
+      exchange_id: selectedExchange,
     };
     await createTimeframe(payload);
-    setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
-    loadTimeframes();
+    setTfForm({ code: "", history_limit: "", min_len: "", hours: "" });
+    loadTimeframes(selectedExchange);
   }
-
   async function saveTimeframe(tf) {
     const payload = {
       code: tf.code,
@@ -423,12 +429,11 @@ export default function PageConfig() {
           <InputLabel>Exchange</InputLabel>
           <Select
             value={selectedExchange}
-            label="Exchange"
             onChange={(e) => setSelectedExchange(e.target.value)}
           >
             {exchanges.map((ex) => (
               <MenuItem key={ex.id} value={ex.id}>
-                {ex.code}
+                {ex.code.toUpperCase()}
               </MenuItem>
             ))}
           </Select>

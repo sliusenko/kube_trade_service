@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Query, APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from common.deps.db import get_session
@@ -13,8 +13,16 @@ crud = CRUDBase[Timeframe, TimeframeCreate, TimeframeUpdate](Timeframe)
 
 
 @router.get("/", response_model=list[TimeframeRead])
-async def list_timeframes(db: AsyncSession = Depends(get_session)):
-    return await crud.get_all(db)
+async def list_timeframes(
+    exchange_id: Optional[UUID] = Query(None, description="Filter by exchange_id"),
+    db: AsyncSession = Depends(get_session),
+):
+    query = select(Timeframe)
+    if exchange_id:
+        query = query.where(Timeframe.exchange_id == exchange_id)
+
+    result = await db.execute(query)
+    return result.scalars().all()
 
 @router.post("/", response_model=TimeframeRead)
 async def create_timeframe(item: TimeframeCreate, db: AsyncSession = Depends(get_session)):
