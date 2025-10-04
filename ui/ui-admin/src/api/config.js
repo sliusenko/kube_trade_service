@@ -29,12 +29,12 @@ export async function getTimeframes(exchangeId = null) {
 }
 
 export const createTimeframe = async (item) => {
-  const res = await apiClient.post("/config/timeframes/", item);
+  const res = await apiClient.post(`/config/timeframes/${code}?exchange_id=${item.exchange_id}`, item);
   return res.data;
 };
 
 export const updateTimeframe = async (code, item) => {
-  const res = await apiClient.put(`/config/timeframes/${code}`, item);
+  const res = await apiClient.put(`/config/timeframes/${code}?exchange_id=${item.exchange_id}`, item);
   return res.data;
 };
 

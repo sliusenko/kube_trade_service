@@ -39,11 +39,22 @@ async def get_timeframe(code: str, db: AsyncSession = Depends(get_session)):
     return obj
 
 @router.put("/{code}", response_model=TimeframeRead)
-async def update_timeframe(code: str, item: TimeframeUpdate, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(Timeframe).where(Timeframe.code == code))
+async def update_timeframe(
+    code: str,
+    item: TimeframeUpdate,
+    db: AsyncSession = Depends(get_session),
+    exchange_id: UUID = Query(...),
+):
+    result = await db.execute(
+        select(Timeframe)
+        .where(Timeframe.code == code)
+        .where(Timeframe.exchange_id == exchange_id)
+    )
     obj = result.scalar_one_or_none()
+
     if not obj:
-        raise HTTPException(404, "Timeframe not found")
+        raise HTTPException(status_code=404, detail="Timeframe not found")
+
     return await crud.update(db, obj, item)
 
 @router.delete("/{code}")
