@@ -60,30 +60,44 @@ class TradeProfile(Base):
     __tablename__ = "trade_profiles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
 
-    # нові поля
+    # --- Foreign keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
     )
     exchange_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("exchanges.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+    )
+    user_exchange_account_id: Mapped[int] = mapped_column(
+        ForeignKey("user_exchange_accounts.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
-    # relationships
+    # --- Relationships
     user: Mapped["User"] = relationship("User", back_populates="trade_profiles")
     exchange: Mapped["Exchange"] = relationship("Exchange", back_populates="trade_profiles")
+    account: Mapped["UserExchangeAccount"] = relationship("UserExchangeAccount", back_populates="trade_profiles")
+
     conditions: Mapped[List["TradeCondition"]] = relationship(
         "TradeCondition", back_populates="profile", cascade="all, delete"
     )
 
+    active_symbols: Mapped[List["UserActiveSymbol"]] = relationship(
+        "UserActiveSymbol", back_populates="trade_profile", cascade="all, delete"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "exchange_id", "name", name="uq_trade_profile_per_user_exchange"),
+    )
+
     def __repr__(self) -> str:
-        return f"<TradeProfile {self.id} user={self.user_id} exchange={self.exchange_id}>"
+        return f"<TradeProfile {self.name} user={self.user_id} exchange={self.exchange_id}>"
 class TradeCondition(Base):
     __tablename__ = "trade_conditions"
     id = Column(Integer, primary_key=True, index=True)

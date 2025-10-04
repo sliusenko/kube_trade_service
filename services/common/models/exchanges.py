@@ -98,7 +98,11 @@ class Exchange(Base):
     timeframes: Mapped[List["Timeframe"]] = relationship(
         "Timeframe", back_populates="exchange", cascade="all, delete-orphan"
     )
-
+    user_accounts: Mapped[List["UserExchangeAccount"]] = relationship(
+        "UserExchangeAccount",
+        back_populates="exchange",
+        cascade="all, delete-orphan",
+    )
     def __repr__(self) -> str:
         return f"<Exchange {self.code} ({self.environment}) active={self.is_active}>"
 class ExchangeCredential(Base):
