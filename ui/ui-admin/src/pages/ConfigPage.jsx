@@ -123,9 +123,9 @@ export default function PageConfig() {
     loadTimeframes(selectedExchange);
   }
 
-  async function removeTimeframe(code) {
+  async function removeTimeframe(tf) {
     if (window.confirm("Видалити таймфрейм?")) {
-      await deleteTimeframe(code);
+      await deleteTimeframe(tf.code, tf.exchange_id);
       loadTimeframes(selectedExchange);
     }
   }
@@ -547,7 +547,7 @@ export default function PageConfig() {
                     size="small"
                     color="error"
                     startIcon={<Delete />}
-                    onClick={() => removeTimeframe(tf.code)}
+                    onClick={() => removeTimeframe(tf)}
                   >
                     Видалити
                   </Button>

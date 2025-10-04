@@ -58,8 +58,13 @@ async def list_timeframes():
     return await forward_request("GET", "/timeframes/")
 
 @router.post("/timeframes/")
-async def create_timeframe(item: TimeframeCreate):
-    return await forward_request("POST", "/timeframes/", item.dict())
+async def create_timeframe(code: str, request: Request, item: TimeframeUpdate):
+    query_string = request.url.query
+    path = f"/timeframes/{code}"
+    if query_string:
+        path += f"?{query_string}"
+
+    return await forward_request("POST", path, item.dict())
 
 @router.put("/timeframes/{code}")
 async def update_timeframe(code: str, request: Request, item: TimeframeUpdate):
@@ -71,8 +76,12 @@ async def update_timeframe(code: str, request: Request, item: TimeframeUpdate):
     return await forward_request("PUT", path, item.dict())
 
 @router.delete("/timeframes/{code}")
-async def delete_timeframe(code: str):
-    return await forward_request("DELETE", f"/timeframes/{code}")
+async def delete_timeframe(code: str, request: Request):
+    query_string = request.url.query
+    path = f"/timeframes/{code}"
+    if query_string:
+        path += f"?{query_string}"
+    return await forward_request("DELETE", path)
 
 
 # -------- Commands --------

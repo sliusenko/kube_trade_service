@@ -38,8 +38,8 @@ export const updateTimeframe = async (code, item) => {
   return res.data;
 };
 
-export const deleteTimeframe = async (code) => {
-  const res = await apiClient.delete(`/config/timeframes/${code}`);
+export const deleteTimeframe = async (code, exchange_id) => {
+  const res = await apiClient.delete(`/config/timeframes/${code}?exchange_id=${exchange_id}`);
   return res.data;
 };
 

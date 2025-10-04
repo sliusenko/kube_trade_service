@@ -27,8 +27,24 @@ async def list_timeframes(
     return result.scalars().all()
 
 @router.post("/", response_model=TimeframeRead)
-async def create_timeframe(item: TimeframeCreate, db: AsyncSession = Depends(get_session)):
-    return await crud.create(db, item)
+async def create_timeframe(
+    item: TimeframeCreate,
+    db: AsyncSession = Depends(get_session),
+    exchange_id: UUID = Query(..., description="Exchange ID required"),
+):
+    result = await db.execute(
+        select(Timeframe)
+        .where(Timeframe.code == item.code)
+        .where(Timeframe.exchange_id == exchange_id)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail="Timeframe already exists for this exchange")
+
+    new_item = item.model_dump()
+    new_item["exchange_id"] = exchange_id
+
+    return await crud.create(db, TimeframeCreate(**new_item))
 
 @router.get("/{code}", response_model=TimeframeRead)
 async def get_timeframe(code: str, db: AsyncSession = Depends(get_session)):
@@ -58,9 +74,18 @@ async def update_timeframe(
     return await crud.update(db, obj, item)
 
 @router.delete("/{code}")
-async def delete_timeframe(code: str, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(Timeframe).where(Timeframe.code == code))
+async def delete_timeframe(
+    code: str,
+    db: AsyncSession = Depends(get_session),
+    exchange_id: UUID = Query(...),
+):
+    result = await db.execute(
+        select(Timeframe)
+        .where(Timeframe.code == code)
+        .where(Timeframe.exchange_id == exchange_id)
+    )
     obj = result.scalar_one_or_none()
     if not obj:
-        raise HTTPException(404, "Timeframe not found")
+        raise HTTPException(status_code=404, detail="Timeframe not found")
+
     return await crud.delete(db, obj)
