@@ -29,7 +29,15 @@ export async function getTimeframes(exchangeId = null) {
 }
 
 export const createTimeframe = async (item) => {
-  const res = await apiClient.post(`/config/timeframes/${code}?exchange_id=${item.exchange_id}`, item);
+  const payload = {
+    code: item.code,
+    history_limit: item.history_limit ? parseInt(item.history_limit, 10) : null,
+    min_len: item.min_len ? parseInt(item.min_len, 10) : null,
+    hours: item.hours ? parseFloat(item.hours) : null
+  };
+
+  console.log("📤 Sending payload:", payload);
+  const res = await apiClient.post(`/config/timeframes/?exchange_id=${item.exchange_id}`, payload);
   return res.data;
 };
 

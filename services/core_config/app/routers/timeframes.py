@@ -30,8 +30,9 @@ async def list_timeframes(
 async def create_timeframe(
     item: TimeframeCreate,
     db: AsyncSession = Depends(get_session),
-    exchange_id: UUID = Query(..., description="Exchange ID required"),
+    exchange_id: UUID = Query(...),
 ):
+
     result = await db.execute(
         select(Timeframe)
         .where(Timeframe.code == item.code)
@@ -39,12 +40,11 @@ async def create_timeframe(
     )
     existing = result.scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=400, detail="Timeframe already exists for this exchange")
+        raise HTTPException(status_code=400, detail="Timeframe already exists")
 
-    new_item = item.model_dump()
-    new_item["exchange_id"] = exchange_id
-
-    return await crud.create(db, TimeframeCreate(**new_item))
+    obj_data = item.dict()
+    obj_data["exchange_id"] = exchange_id
+    return await crud.create(db, obj_data)
 
 @router.get("/{code}", response_model=TimeframeRead)
 async def get_timeframe(code: str, db: AsyncSession = Depends(get_session)):

@@ -58,13 +58,18 @@ async def list_timeframes():
     return await forward_request("GET", "/timeframes/")
 
 @router.post("/timeframes/")
-async def create_timeframe(code: str, request: Request, item: TimeframeUpdate):
+async def create_timeframe(request: Request, item: TimeframeCreate):
     query_string = request.url.query
-    path = f"/timeframes/{code}"
+    path = "/timeframes/"
     if query_string:
         path += f"?{query_string}"
 
+    url = f"{BASE_URL}{path}"
+    print(f"➡️ Forwarding POST {url}")
+    print(f"📦 Payload: {item.dict()}")
+
     return await forward_request("POST", path, item.dict())
+
 
 @router.put("/timeframes/{code}")
 async def update_timeframe(code: str, request: Request, item: TimeframeUpdate):
