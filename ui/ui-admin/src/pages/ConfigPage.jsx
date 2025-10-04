@@ -77,9 +77,7 @@ export default function PageConfig() {
 
   // ---- Timeframes ----
   const [timeframes, setTimeframes] = useState([]);
-  const [tfForm, setTfForm] = useState({
-    code: "", history_limit: "", min_len: "", hours: "", lookback: ""
-  });
+  const [tfForm, setTfForm] = useState({ code: "", history_limit: "", min_len: "", hours: "" });
   const [exchanges, setExchanges] = useState([]);
   const [selectedExchange, setSelectedExchange] = useState("");
 
@@ -135,8 +133,12 @@ export default function PageConfig() {
   const filteredTimeframes = timeframes.filter(tf => tf.exchange_id === selectedExchange);
 
   useEffect(() => {
-    loadExchanges();
-    loadTimeframes();
+    loadExchanges().then((data) => {
+      if (data && data.length > 0) {
+        setSelectedExchange(data[0].id);
+        loadTimeframes(data[0].id);
+      }
+    });
   }, []);
 
   // ---- Commands ----
@@ -302,6 +304,7 @@ export default function PageConfig() {
     loadProfiles();
     loadConditions();
     loadIcons();
+    loadExchanges();
   }, []);
 
   return (

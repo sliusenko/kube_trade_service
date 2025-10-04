@@ -22,13 +22,11 @@ export const deleteSetting = async (code) => {
 };
 
 // ================== TIMEFRAMES ==================
-export const getTimeframes = async (exchangeId = null) => {
-  const url = exchangeId
-    ? `/config/timeframes?exchange_id=${exchangeId}`
-    : `/config/timeframes`;
+export async function getTimeframes(exchangeId = null) {
+  const url = exchangeId ? `/config/timeframes/?exchange_id=${exchangeId}` : "/config/timeframes/";
   const res = await apiClient.get(url);
   return res.data;
-};
+}
 
 export const createTimeframe = async (item) => {
   const res = await apiClient.post("/config/timeframes/", item);
