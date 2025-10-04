@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { parseLookback, formatLookback } from "../pages/utils";
 import {
   Tabs,
   Tab,
@@ -101,7 +100,7 @@ export default function PageConfig() {
   async function addTimeframe(e) {
     e.preventDefault();
     const payload = {
-      code: tf.code,
+      code: tfForm.code,
       history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
       min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
@@ -127,7 +126,7 @@ export default function PageConfig() {
   async function removeTimeframe(code) {
     if (window.confirm("Видалити таймфрейм?")) {
       await deleteTimeframe(code);
-      loadTimeframes();
+      loadTimeframes(selectedExchange);
     }
   }
 
@@ -299,7 +298,6 @@ export default function PageConfig() {
   // ---- Lifecycle ----
   useEffect(() => {
     loadSettings();
-    loadTimeframes();
     loadCommands();
     loadReasons();
     loadProfiles();
