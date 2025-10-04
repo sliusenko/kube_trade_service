@@ -79,8 +79,20 @@ export default function PageConfig() {
   const [tfForm, setTfForm] = useState({
     code: "", history_limit: "", min_len: "", hours: "", lookback: ""
   });
+  const [exchanges, setExchanges] = useState([]);
+  const [selectedExchange, setSelectedExchange] = useState("");
 
-  async function loadTimeframes() { setTimeframes(await getTimeframes()); }
+  async function loadExchanges() {
+    const data = await getExchanges();
+    setExchanges(data);
+    if (data.length > 0 && !selectedExchange) setSelectedExchange(data[0].id);
+  }
+
+  async function loadTimeframes() {
+    const data = await getTimeframes();
+    setTimeframes(data);
+  }
+
   async function addTimeframe(e) {
     e.preventDefault();
     const payload = {
@@ -88,29 +100,38 @@ export default function PageConfig() {
       history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
       min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
-      lookback: parseLookback(tfForm.lookback) // 👈 тут конвертація
+      exchange_id: selectedExchange, // ✅ додаємо вибрану біржу
     };
     await createTimeframe(payload);
     setTfForm({ code: "", history_limit: "", min_len: "", hours: "", lookback: "" });
     loadTimeframes();
   }
+
   async function saveTimeframe(tf) {
     const payload = {
       code: tf.code,
       history_limit: parseInt(tf.history_limit, 10),
       min_len: parseInt(tf.min_len, 10),
       hours: parseFloat(tf.hours),
-      lookback: parseLookback(tf.lookback)
+      exchange_id: tf.exchange_id,
     };
     await updateTimeframe(tf.code, payload);
     loadTimeframes();
   }
+
   async function removeTimeframe(code) {
     if (window.confirm("Видалити таймфрейм?")) {
       await deleteTimeframe(code);
       loadTimeframes();
     }
   }
+
+  const filteredTimeframes = timeframes.filter(tf => tf.exchange_id === selectedExchange);
+
+  useEffect(() => {
+    loadExchanges();
+    loadTimeframes();
+  }, []);
 
   // ---- Commands ----
   const [commands, setCommands] = useState([]);
@@ -397,14 +418,53 @@ export default function PageConfig() {
 
       {/* ---- Timeframes ---- */}
       <TabPanel value={tab} index={1}>
-        <form onSubmit={addTimeframe} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <TextField label="Code" value={tfForm.code} onChange={(e) => setTfForm({ ...tfForm, code: e.target.value })} />
-          <TextField label="History Limit" value={tfForm.history_limit} onChange={(e) => setTfForm({ ...tfForm, history_limit: e.target.value })} />
-          <TextField label="Min Len" value={tfForm.min_len} onChange={(e) => setTfForm({ ...tfForm, min_len: e.target.value })} />
-          <TextField label="Hours" value={tfForm.hours} onChange={(e) => setTfForm({ ...tfForm, hours: e.target.value })} />
-          <TextField label="Lookback" value={tfForm.lookback} onChange={(e) => setTfForm({ ...tfForm, lookback: e.target.value })} />
-          <Button type="submit" variant="contained" startIcon={<Add />}>Додати</Button>
+        {/* --- Select Exchange --- */}
+        <FormControl fullWidth style={{ marginBottom: 16 }}>
+          <InputLabel>Exchange</InputLabel>
+          <Select
+            value={selectedExchange}
+            label="Exchange"
+            onChange={(e) => setSelectedExchange(e.target.value)}
+          >
+            {exchanges.map((ex) => (
+              <MenuItem key={ex.id} value={ex.id}>
+                {ex.code}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* --- Add Form --- */}
+        <form
+          onSubmit={addTimeframe}
+          style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}
+        >
+          <TextField
+            label="Code"
+            value={tfForm.code}
+            onChange={(e) => setTfForm({ ...tfForm, code: e.target.value })}
+          />
+          <TextField
+            label="History Limit"
+            value={tfForm.history_limit}
+            onChange={(e) => setTfForm({ ...tfForm, history_limit: e.target.value })}
+          />
+          <TextField
+            label="Min Len"
+            value={tfForm.min_len}
+            onChange={(e) => setTfForm({ ...tfForm, min_len: e.target.value })}
+          />
+          <TextField
+            label="Hours"
+            value={tfForm.hours}
+            onChange={(e) => setTfForm({ ...tfForm, hours: e.target.value })}
+          />
+          <Button type="submit" variant="contained" startIcon={<Add />}>
+            Додати
+          </Button>
         </form>
+
+        {/* --- Table --- */}
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -412,29 +472,78 @@ export default function PageConfig() {
               <TableCell>History Limit</TableCell>
               <TableCell>Min Len</TableCell>
               <TableCell>Hours</TableCell>
-              <TableCell>Lookback</TableCell>
+              <TableCell>Exchange</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {timeframes.map((tf) => (
-              <TableRow key={tf.code}>
+            {filteredTimeframes.map((tf) => (
+              <TableRow key={`${tf.code}-${tf.exchange_id}`}>
                 <TableCell>{tf.code}</TableCell>
                 <TableCell>
-                  <TextField value={tf.history_limit || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, history_limit: e.target.value } : t))} />
+                  <TextField
+                    value={tf.history_limit || ""}
+                    size="small"
+                    onChange={(e) =>
+                      setTimeframes((prev) =>
+                        prev.map((t) =>
+                          t.code === tf.code && t.exchange_id === tf.exchange_id
+                            ? { ...t, history_limit: e.target.value }
+                            : t
+                        )
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField value={tf.min_len || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, min_len: e.target.value } : t))} />
+                  <TextField
+                    value={tf.min_len || ""}
+                    size="small"
+                    onChange={(e) =>
+                      setTimeframes((prev) =>
+                        prev.map((t) =>
+                          t.code === tf.code && t.exchange_id === tf.exchange_id
+                            ? { ...t, min_len: e.target.value }
+                            : t
+                        )
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField value={tf.hours || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, hours: e.target.value } : t))} />
+                  <TextField
+                    value={tf.hours || ""}
+                    size="small"
+                    onChange={(e) =>
+                      setTimeframes((prev) =>
+                        prev.map((t) =>
+                          t.code === tf.code && t.exchange_id === tf.exchange_id
+                            ? { ...t, hours: e.target.value }
+                            : t
+                        )
+                      )
+                    }
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField value={tf.lookback || ""} size="small" onChange={(e) => setTimeframes(prev => prev.map(t => t.code === tf.code ? { ...t, lookback: e.target.value } : t))} />
+                  {exchanges.find((ex) => ex.id === tf.exchange_id)?.code || "—"}
                 </TableCell>
                 <TableCell align="right">
-                  <Button size="small" variant="contained" onClick={() => saveTimeframe(tf)}>Зберегти</Button>
-                  <Button size="small" color="error" startIcon={<Delete />} onClick={() => removeTimeframe(tf.code)}>Видалити</Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => saveTimeframe(tf)}
+                  >
+                    Зберегти
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<Delete />}
+                    onClick={() => removeTimeframe(tf.code)}
+                  >
+                    Видалити
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
