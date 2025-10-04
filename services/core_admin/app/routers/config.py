@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 import httpx
 from common.deps.config import CoreAdminSettings
 from common.schemas.config import (
@@ -62,8 +62,13 @@ async def create_timeframe(item: TimeframeCreate):
     return await forward_request("POST", "/timeframes/", item.dict())
 
 @router.put("/timeframes/{code}")
-async def update_timeframe(code: str, item: TimeframeUpdate):
-    return await forward_request("PUT", f"/timeframes/{code}", item.dict())
+async def update_timeframe(code: str, request: Request, item: TimeframeUpdate):
+    query_string = request.url.query
+    path = f"/timeframes/{code}"
+    if query_string:
+        path += f"?{query_string}"
+
+    return await forward_request("PUT", path, item.dict())
 
 @router.delete("/timeframes/{code}")
 async def delete_timeframe(code: str):

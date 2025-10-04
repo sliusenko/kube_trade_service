@@ -101,7 +101,7 @@ export default function PageConfig() {
   async function addTimeframe(e) {
     e.preventDefault();
     const payload = {
-      code: tfForm.code,
+      code: tf.code,
       history_limit: tfForm.history_limit ? parseInt(tfForm.history_limit, 10) : null,
       min_len: tfForm.min_len ? parseInt(tfForm.min_len, 10) : null,
       hours: tfForm.hours ? parseFloat(tfForm.hours) : null,
@@ -120,7 +120,8 @@ export default function PageConfig() {
       exchange_id: tf.exchange_id,
     };
     await updateTimeframe(tf.code, payload);
-    loadTimeframes();
+//    loadTimeframes();
+    loadTimeframes(selectedExchange);
   }
 
   async function removeTimeframe(code) {
